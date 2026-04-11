@@ -2,7 +2,7 @@
 **Final Project Cloud Computing - Teknik Informatika UPR**
 
 ## Tim Proyek
-* Naufal Ihsan Sriyanto (DevOps Engineer) - @username_lu
+* Naufal Ihsan Sriyanto (DevOps Engineer)
 * Zhykwa Ceryl (Cloud Architect)
 * Arifin (Backend Developer)
 * Rendy Saputra (Security Engineer)
