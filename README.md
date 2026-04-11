@@ -12,4 +12,4 @@ Platform pemrosesan data otomatis (Event-Driven) menggunakan layanan Azure: VM, 
 
 ## Arsitektur
 (Upload gambar diagram lu ke repo ini, terus panggil di sini)
-![Architecture Diagram](Arsitektur_Diagram.jpg)
+![Architecture Diagram](<img width="2800" height="4749" alt="Arsitektur Diagram drawio (1)" src="https://github.com/user-attachments/assets/14a3025f-8b11-4b62-b891-1d32d40850c7" />)
