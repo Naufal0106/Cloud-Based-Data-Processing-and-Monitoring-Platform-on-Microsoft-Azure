@@ -9,6 +9,3 @@
 
 ## Deskripsi Singkat
 Platform pemrosesan data otomatis (Event-Driven) menggunakan layanan Azure: VM, Functions, CosmosDB, Blob Storage, CDN, dan Key Vault.
-
-## Arsitektur
-![Architecture Diagram](Arsitektur Diagram.drawio (1).png)
