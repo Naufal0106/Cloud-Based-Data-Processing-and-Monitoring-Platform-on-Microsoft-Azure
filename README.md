@@ -41,6 +41,7 @@ Repositori ini dikelola dengan standar operasional DevOps untuk memudahkan kolab
 │   └── dashboard/                   # Source code web dashboard (VM hosted)
 ├── .gitignore                       # File untuk mengabaikan file sampah/temp
 └── README.md                        # Dokumentasi utama proyek
+
 * `arch/` : Berisi diagram arsitektur sistem dan file mentah desain.
 * `docs/` : Dokumen perencanaan proyek dan laporan estimasi biaya (RAB).
 * `infra/`: (Placeholder) Skrip automasi infrastruktur dan konfigurasi cloud.
