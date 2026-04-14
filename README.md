@@ -26,6 +26,8 @@ Sistem ini dirancang menggunakan pendekatan *layered architecture* yang mencakup
 ## Struktur Repositori
 Repositori ini dikelola dengan standar operasional DevOps untuk memudahkan kolaborasi tim:
 .
+```text
+.
 ├── arch/
 │   ├── Arsitektur_Diagram.png       # File gambar diagram utama
 │   └── Arsitektur_Diagram.drawio    # File mentah desain arsitektur
@@ -33,11 +35,11 @@ Repositori ini dikelola dengan standar operasional DevOps untuk memudahkan kolab
 │   ├── Dokumen_Perencanaan.pdf      # Laporan perencanaan proyek
 │   └── Estimasi_Biaya_Azure.pdf     # Lampiran resmi kalkulator Azure
 ├── infra/
-│   └── .gitkeep                     # Placeholder untuk skrip automasi nanti
+│   └── .gitkeep                     # Placeholder skrip automasi (Terraform/Bicep)
 ├── src/
-│   ├── backend/                     # Folder kodingan Azure Functions (Arifin)
-│   └── dashboard/                   # Folder kodingan web dashboard (VM)
-├── .gitignore                       # File untuk mengabaikan file sampah
+│   ├── backend/                     # Kodingan Azure Functions (Serverless logic)
+│   └── dashboard/                   # Source code web dashboard (VM hosted)
+├── .gitignore                       # File untuk mengabaikan file sampah/temp
 └── README.md                        # Dokumentasi utama proyek
 * `arch/` : Berisi diagram arsitektur sistem dan file mentah desain.
 * `docs/` : Dokumen perencanaan proyek dan laporan estimasi biaya (RAB).
