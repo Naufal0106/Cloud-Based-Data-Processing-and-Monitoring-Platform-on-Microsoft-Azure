@@ -3,8 +3,8 @@
 
 ## Tim Proyek
 * Naufal Ihsan Sriyanto (DevOps Engineer)
-* Zhykwa Ceryl (Cloud Architect)
-* Arifin (Backend Developer)
+* Zhykwa Ceryl Mavanudin (Cloud Architect)
+* Muhammad Arifin Ilham (Backend Developer)
 * Rendy Saputra (Security Engineer)
 
 ## Deskripsi Singkat
