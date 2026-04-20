@@ -11,3 +11,7 @@
 
 # File variabel rahasia
 *.tfvars
+
+*.tfvars.json
+terraform.tfstate*
+.terraform/
