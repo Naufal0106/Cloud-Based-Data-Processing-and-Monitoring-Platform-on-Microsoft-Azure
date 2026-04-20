@@ -72,8 +72,8 @@ resource "azurerm_linux_virtual_machine" "vm_web" {
   resource_group_name = azurerm_resource_group.rg.name
   location            = azurerm_resource_group.rg.location
   size                = "Standard_B1s"
-  admin_username      = "naufaladmin"
-  admin_password      = "P@ssw0rdProyek11!" # Segera ganti setelah berhasil login
+  admin_username = var.admin_username
+  admin_password = var.admin_password
   disable_password_authentication = false
 
   network_interface_ids = [azurerm_network_interface.nic_web.id]
