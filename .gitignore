@@ -1,0 +1,13 @@
+# Folder sampah Terraform
+.terraform/
+*.terraform*
+
+# File catatan status (Jangan di-share)
+*.tfstate
+*.tfstate.*
+
+# File gembok yang tadi bikin macet
+*.terraform.tfstate.lock.info
+
+# File variabel rahasia
+*.tfvars
