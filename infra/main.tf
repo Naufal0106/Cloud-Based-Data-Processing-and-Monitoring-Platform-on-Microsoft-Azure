@@ -14,8 +14,8 @@ provider "azurerm" {
 
 # 2. Membuat Resource Group (Wadah Besar Proyek)
 resource "azurerm_resource_group" "rg" {
-  name     = "RG-Kelompok11-Cloud"
-  location = "Indonesia Central " 
+  name     = "RG-Kelompok11"
+  location = "Indonesia Central" 
 }
 
 # 3. Membuat Virtual Network (VNet) - Fondasi Jaringan
