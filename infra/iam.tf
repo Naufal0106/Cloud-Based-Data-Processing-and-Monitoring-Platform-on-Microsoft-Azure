@@ -8,7 +8,7 @@
 resource "azurerm_role_assignment" "role_rendy" {
   scope                = azurerm_resource_group.rg.id
   role_definition_name = "Contributor"
-  principal_id         = "849fa778-bd90-46dc-bb3d-790592467d9e" 
+  principal_id         = var.id_rendy  
 }
 
 # 2. Akses untuk Muhammad Arifin Ilham (Backend Developer)
@@ -16,7 +16,7 @@ resource "azurerm_role_assignment" "role_rendy" {
 resource "azurerm_role_assignment" "role_arifin" {
   scope                = azurerm_resource_group.rg.id
   role_definition_name = "Contributor"
-  principal_id         = "8314c4f4-adde-49df-ab1d-28b358c9e4f0" 
+  principal_id         = var.id_arifin 
 }
 
 # 3. Akses untuk Zhykwa Ceryl Mavanudin (Cloud Architect)
@@ -24,5 +24,5 @@ resource "azurerm_role_assignment" "role_arifin" {
 resource "azurerm_role_assignment" "role_zhykwa" {
   scope                = azurerm_resource_group.rg.id
   role_definition_name = "Contributor"
-  principal_id         = "ea9b6db8-734b-4f6e-9b26-c2f1c6da9588" 
+  principal_id         = var.id_zhykwa
 }

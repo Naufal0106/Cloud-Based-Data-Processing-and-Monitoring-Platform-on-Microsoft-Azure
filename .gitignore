@@ -1,17 +1,21 @@
-# Folder sampah Terraform
+# Folder binary dan modul Terraform
 .terraform/
-*.terraform*
 
-# File catatan status (Jangan di-share)
+# File gembok provider (Opsional, tapi biasanya di-ignore jika ingin ganti-ganti versi)
+# .terraform.lock.hcl 
+
+# File status Terraform (SANGAT PENTING: Jangan pernah di-commit)
 *.tfstate
 *.tfstate.*
+terraform.tfstate*
 
-# File gembok yang tadi bikin macet
+# File gembok status saat sedang running
 *.terraform.tfstate.lock.info
 
-# File variabel rahasia
+# File variabel rahasia (SANGAT PENTING: Karena isinya password)
 *.tfvars
-
 *.tfvars.json
-terraform.tfstate*
-.terraform/
+
+# File log atau backup
+*.log
+crash.log
