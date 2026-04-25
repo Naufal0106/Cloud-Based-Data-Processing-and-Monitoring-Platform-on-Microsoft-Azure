@@ -11,6 +11,10 @@ variable "admin_password" {
 }
 
 # Principal IDs untuk tim
+variable "id_naufal" {
+  description = "Principal ID untuk Naufal (Owner)"
+  type        = string
+}
 variable "id_rendy" { type = string }
 variable "id_arifin" { type = string }
 variable "id_zhykwa" { type = string }

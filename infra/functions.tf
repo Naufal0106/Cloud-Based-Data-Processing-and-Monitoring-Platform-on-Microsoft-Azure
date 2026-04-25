@@ -35,7 +35,7 @@ resource "azurerm_linux_function_app" "func_app" {
 
   site_config {
     application_stack {
-      python_version = "3.9" # Sesuaikan jika ingin menggunakan Node.js atau bahasa lain
+      python_version = "3.9" 
     }
   }
 
