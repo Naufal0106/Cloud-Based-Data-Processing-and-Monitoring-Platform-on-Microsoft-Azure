@@ -1,21 +1,56 @@
-# Folder binary dan modul Terraform
+# ===============================
+# Terraform
+# ===============================
+
+# Folder provider / binary
 .terraform/
 
-# File gembok provider (Opsional, tapi biasanya di-ignore jika ingin ganti-ganti versi)
-# .terraform.lock.hcl 
+# Lock provider (disarankan DI-COMMIT untuk tim)
+# .terraform.lock.hcl
 
-# File status Terraform (SANGAT PENTING: Jangan pernah di-commit)
+# State files (jangan commit)
 *.tfstate
 *.tfstate.*
 terraform.tfstate*
 
-# File gembok status saat sedang running
+# Lock file saat apply
 *.terraform.tfstate.lock.info
 
-# File variabel rahasia (SANGAT PENTING: Karena isinya password)
+# Variable rahasia
 *.tfvars
 *.tfvars.json
 
-# File log atau backup
+# Crash / logs
 *.log
 crash.log
+
+# ===============================
+# Secrets / Credentials
+# ===============================
+.env
+.env.*
+*.pem
+*.key
+*.pfx
+*.json
+
+# ===============================
+# Editor / IDE
+# ===============================
+.vscode/
+.idea/
+
+# ===============================
+# Temporary Files
+# ===============================
+temp/
+*/temp/
+*.tmp
+*.bak
+
+# ===============================
+# OS Files
+# ===============================
+Thumbs.db
+desktop.ini
+.DS_Store
