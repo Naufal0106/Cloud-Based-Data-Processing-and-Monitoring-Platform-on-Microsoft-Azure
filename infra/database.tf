@@ -41,11 +41,21 @@ resource "azurerm_cosmosdb_sql_container" "container_telemetry" {
   account_name        = azurerm_cosmosdb_account.cosmos_acc.name
   database_name       = azurerm_cosmosdb_sql_database.main_db.name
   
-  # Partition Key sangat penting untuk performa query monitoring
-  partition_key_path  = ["/deviceId"]
+  # Partition Key (Gunakan versi jamak agar cocok dengan tipe data list/tuple [])
+  partition_key_paths = ["/deviceId"]
   
-  # Indexing policy default sudah cukup untuk awal
+  # Indexing policy didefinisikan eksplisit agar sinkron dengan state Azure
   indexing_policy {
     indexing_mode = "consistent"
+
+    # Mengindeks seluruh properti JSON agar query pencarian lancar
+    included_path {
+      path = "/*"
+    }
+
+    # (Opsional) Mengecualikan properti internal Azure untuk efisiensi
+    excluded_path {
+      path = "/\"_etag\"/?"
+    }
   }
 }
