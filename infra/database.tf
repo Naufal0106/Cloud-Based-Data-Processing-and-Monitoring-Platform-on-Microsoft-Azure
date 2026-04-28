@@ -42,7 +42,7 @@ resource "azurerm_cosmosdb_sql_container" "container_telemetry" {
   database_name       = azurerm_cosmosdb_sql_database.main_db.name
   
   # Partition Key sangat penting untuk performa query monitoring
-  partition_key_path  = "/deviceId"
+  partition_key_path  = ["/deviceId"]
   
   # Indexing policy default sudah cukup untuk awal
   indexing_policy {
