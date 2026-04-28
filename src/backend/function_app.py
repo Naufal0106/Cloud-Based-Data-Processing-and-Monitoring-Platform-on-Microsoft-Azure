@@ -10,6 +10,8 @@ from azure.keyvault.secrets import SecretClient
 
 app = func.FunctionApp()
 
+# test CI/CD pipeline
+
 # ──────────────────────────────────────────────
 # Helper: ambil Cosmos DB connection string dari Key Vault
 # ──────────────────────────────────────────────
