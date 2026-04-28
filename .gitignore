@@ -54,3 +54,4 @@ temp/
 Thumbs.db
 desktop.ini
 .DS_Store
+.local.settings.json

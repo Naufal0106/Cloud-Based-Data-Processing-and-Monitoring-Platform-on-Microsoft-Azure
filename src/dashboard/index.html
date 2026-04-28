@@ -1,0 +1,657 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>DataPlatform Monitor — Kelompok 11</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+  :root {
+    --bg:        #0a0e17;
+    --panel:     #111827;
+    --border:    #1e2d45;
+    --accent:    #00d4ff;
+    --accent2:   #7c3aed;
+    --success:   #10b981;
+    --warning:   #f59e0b;
+    --danger:    #ef4444;
+    --text:      #e2e8f0;
+    --muted:     #64748b;
+    --font-ui:   'Syne', sans-serif;
+    --font-mono: 'Space Mono', monospace;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-ui);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ── Background grid ── */
+  body::before {
+    content: '';
+    position: fixed; inset: 0; z-index: 0;
+    background-image:
+      linear-gradient(rgba(0,212,255,.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,212,255,.04) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+  }
+
+  /* ── Header ── */
+  header {
+    position: sticky; top: 0; z-index: 50;
+    background: rgba(10,14,23,.85);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+    padding: 0 2rem;
+    display: flex; align-items: center; justify-content: space-between;
+    height: 64px;
+  }
+  .logo {
+    display: flex; align-items: center; gap: .75rem;
+  }
+  .logo-icon {
+    width: 32px; height: 32px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px;
+  }
+  .logo-text { font-size: 1rem; font-weight: 800; letter-spacing: -.02em; }
+  .logo-text span { color: var(--accent); }
+
+  .header-right { display: flex; align-items: center; gap: 1rem; }
+  .live-badge {
+    display: flex; align-items: center; gap: .4rem;
+    font-family: var(--font-mono); font-size: .7rem;
+    color: var(--success); border: 1px solid var(--success);
+    padding: .2rem .6rem; border-radius: 999px;
+  }
+  .live-dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--success);
+    animation: pulse 1.5s infinite;
+  }
+  @keyframes pulse {
+    0%,100% { opacity: 1; }
+    50%      { opacity: .3; }
+  }
+
+  #clock {
+    font-family: var(--font-mono); font-size: .75rem; color: var(--muted);
+  }
+
+  /* ── Layout ── */
+  main {
+    position: relative; z-index: 1;
+    max-width: 1400px; margin: 0 auto;
+    padding: 2rem;
+    display: grid;
+    gap: 1.5rem;
+  }
+
+  /* ── Stat Cards ── */
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+  }
+  .stat-card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.25rem 1.5rem;
+    position: relative; overflow: hidden;
+    animation: fadeUp .5s ease both;
+  }
+  .stat-card::before {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0; height: 2px;
+    background: var(--accent-color, var(--accent));
+  }
+  .stat-card:nth-child(2) { --accent-color: var(--success); }
+  .stat-card:nth-child(3) { --accent-color: var(--warning); }
+  .stat-card:nth-child(4) { --accent-color: var(--danger); }
+
+  .stat-label { font-size: .7rem; text-transform: uppercase; letter-spacing: .1em; color: var(--muted); margin-bottom: .5rem; }
+  .stat-value { font-size: 2.2rem; font-weight: 800; line-height: 1; }
+  .stat-sub   { font-size: .75rem; color: var(--muted); margin-top: .4rem; font-family: var(--font-mono); }
+
+  /* ── Panels ── */
+  .panel {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.5rem;
+    animation: fadeUp .5s ease .1s both;
+  }
+  .panel-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 1.25rem;
+  }
+  .panel-title {
+    font-size: .8rem; text-transform: uppercase; letter-spacing: .1em;
+    color: var(--accent); font-weight: 600;
+  }
+
+  /* ── Two-col layout ── */
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+  @media (max-width: 900px) { .two-col { grid-template-columns: 1fr; } }
+
+  /* ── Chart ── */
+  .chart-wrap { height: 220px; position: relative; }
+
+  /* ── Upload Zone ── */
+  .upload-zone {
+    border: 2px dashed var(--border);
+    border-radius: 10px;
+    padding: 2rem;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color .2s, background .2s;
+  }
+  .upload-zone:hover, .upload-zone.drag-over {
+    border-color: var(--accent);
+    background: rgba(0,212,255,.04);
+  }
+  .upload-icon { font-size: 2rem; margin-bottom: .75rem; }
+  .upload-text { font-size: .85rem; color: var(--muted); }
+  .upload-text strong { color: var(--accent); }
+
+  input[type=file] { display: none; }
+
+  .btn {
+    display: inline-flex; align-items: center; gap: .4rem;
+    padding: .5rem 1.2rem; border-radius: 8px; border: none;
+    font-family: var(--font-ui); font-weight: 600; font-size: .8rem;
+    cursor: pointer; transition: opacity .2s;
+  }
+  .btn:hover { opacity: .85; }
+  .btn-primary { background: var(--accent); color: #000; }
+  .btn-ghost   { background: transparent; color: var(--muted); border: 1px solid var(--border); }
+  .btn-sm      { padding: .3rem .75rem; font-size: .75rem; }
+
+  /* ── Table ── */
+  .table-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: .8rem; }
+  th {
+    text-align: left; padding: .6rem 1rem;
+    font-family: var(--font-mono); font-size: .65rem;
+    text-transform: uppercase; letter-spacing: .08em;
+    color: var(--muted); border-bottom: 1px solid var(--border);
+  }
+  td { padding: .7rem 1rem; border-bottom: 1px solid rgba(30,45,69,.5); }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: rgba(0,212,255,.02); }
+
+  .badge {
+    display: inline-block; padding: .15rem .5rem;
+    border-radius: 4px; font-size: .65rem; font-weight: 600;
+    font-family: var(--font-mono); text-transform: uppercase;
+  }
+  .badge-processed { background: rgba(16,185,129,.15); color: var(--success); }
+  .badge-error     { background: rgba(239,68,68,.15);  color: var(--danger); }
+  .badge-anomaly   { background: rgba(245,158,11,.15); color: var(--warning); }
+  .badge-generic   { background: rgba(100,116,139,.15);color: var(--muted); }
+
+  .mono { font-family: var(--font-mono); font-size: .7rem; color: var(--muted); }
+
+  /* ── Toast ── */
+  #toast {
+    position: fixed; bottom: 2rem; right: 2rem; z-index: 999;
+    background: var(--panel); border: 1px solid var(--border);
+    border-radius: 10px; padding: 1rem 1.5rem;
+    font-size: .85rem; max-width: 320px;
+    transform: translateY(120%); opacity: 0;
+    transition: transform .3s, opacity .3s;
+    display: flex; align-items: center; gap: .75rem;
+  }
+  #toast.show { transform: translateY(0); opacity: 1; }
+  #toast.success { border-color: var(--success); }
+  #toast.error   { border-color: var(--danger); }
+
+  /* ── Log stream ── */
+  .log-stream {
+    background: #070b12; border-radius: 8px; padding: 1rem;
+    height: 180px; overflow-y: auto;
+    font-family: var(--font-mono); font-size: .72rem; line-height: 1.8;
+  }
+  .log-line { display: flex; gap: .75rem; }
+  .log-time { color: var(--muted); flex-shrink: 0; }
+  .log-info    { color: var(--accent); }
+  .log-success { color: var(--success); }
+  .log-warn    { color: var(--warning); }
+  .log-error   { color: var(--danger); }
+
+  /* ── Empty state ── */
+  .empty { text-align: center; padding: 2.5rem; color: var(--muted); font-size: .85rem; }
+
+  /* ── Animations ── */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ── Loading skeleton ── */
+  .skeleton {
+    background: linear-gradient(90deg, var(--panel) 25%, #1a2332 50%, var(--panel) 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+    border-radius: 4px; height: 1em;
+  }
+  @keyframes shimmer {
+    0%   { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ── HEADER ── -->
+<header>
+  <div class="logo">
+    <div class="logo-icon">⬡</div>
+    <div class="logo-text">Data<span>Platform</span></div>
+  </div>
+  <div class="header-right">
+    <span id="clock"></span>
+    <div class="live-badge"><div class="live-dot"></div> LIVE</div>
+    <button class="btn btn-ghost btn-sm" onclick="fetchAll()">↺ Refresh</button>
+  </div>
+</header>
+
+<!-- ── MAIN ── -->
+<main>
+
+  <!-- STAT CARDS -->
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-label">Total Record</div>
+      <div class="stat-value" id="s-total">—</div>
+      <div class="stat-sub">Semua data masuk</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Berhasil Diproses</div>
+      <div class="stat-value" id="s-processed" style="color:var(--success)">—</div>
+      <div class="stat-sub">Status: processed</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Anomali</div>
+      <div class="stat-value" id="s-anomaly" style="color:var(--warning)">—</div>
+      <div class="stat-sub">Deteksi outlier</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Error</div>
+      <div class="stat-value" id="s-error" style="color:var(--danger)">—</div>
+      <div class="stat-sub">Gagal diproses</div>
+    </div>
+  </div>
+
+  <!-- CHARTS + UPLOAD -->
+  <div class="two-col">
+
+    <!-- Chart -->
+    <div class="panel">
+      <div class="panel-header">
+        <span class="panel-title">📊 Distribusi Status</span>
+        <span class="mono" id="chart-updated">—</span>
+      </div>
+      <div class="chart-wrap">
+        <canvas id="statusChart"></canvas>
+      </div>
+    </div>
+
+    <!-- Upload -->
+    <div class="panel">
+      <div class="panel-header">
+        <span class="panel-title">📤 Upload Data JSON</span>
+      </div>
+
+      <div class="upload-zone" id="dropzone" onclick="document.getElementById('fileInput').click()">
+        <div class="upload-icon">📂</div>
+        <div class="upload-text">
+          Drag & drop file <strong>.json</strong> ke sini<br>atau klik untuk pilih file
+        </div>
+      </div>
+      <input type="file" id="fileInput" accept=".json" onchange="handleFile(this.files[0])">
+
+      <div style="margin-top:1rem; display:flex; gap:.75rem; align-items:center; flex-wrap:wrap;">
+        <button class="btn btn-primary" id="btnUpload" onclick="uploadFile()" disabled>
+          ⬆ Upload & Proses
+        </button>
+        <span class="mono" id="file-info" style="color:var(--muted)">Belum ada file dipilih</span>
+      </div>
+
+      <!-- Preview -->
+      <div id="json-preview" style="display:none; margin-top:1rem;">
+        <div class="log-stream" id="preview-content"></div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- DATA TABLE -->
+  <div class="panel">
+    <div class="panel-header">
+      <span class="panel-title">🗄 Data Records</span>
+      <div style="display:flex; gap:.5rem;">
+        <select id="filter-status" onchange="applyFilter()" style="background:var(--bg);border:1px solid var(--border);color:var(--text);padding:.3rem .6rem;border-radius:6px;font-size:.75rem;">
+          <option value="">Semua Status</option>
+          <option value="processed">Processed</option>
+          <option value="anomaly">Anomaly</option>
+          <option value="error">Error</option>
+          <option value="generic">Generic</option>
+        </select>
+        <button class="btn btn-ghost btn-sm" onclick="fetchData()">↺</button>
+      </div>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Waktu Proses</th>
+            <th>Kategori</th>
+            <th>Status</th>
+            <th>Ringkasan</th>
+            <th>Sumber</th>
+          </tr>
+        </thead>
+        <tbody id="data-tbody">
+          <tr><td colspan="6" class="empty">Memuat data...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ACTIVITY LOG -->
+  <div class="panel">
+    <div class="panel-header">
+      <span class="panel-title">📋 Activity Log</span>
+      <button class="btn btn-ghost btn-sm" onclick="clearLog()">Bersihkan</button>
+    </div>
+    <div class="log-stream" id="log-stream">
+      <div class="log-line"><span class="log-time">--:--:--</span><span class="log-info">Dashboard diinisialisasi...</span></div>
+    </div>
+  </div>
+
+</main>
+
+<!-- TOAST -->
+<div id="toast"></div>
+
+<script>
+// ────────────────────────────────────────────────
+// CONFIG — ganti sesuai deployment
+// ────────────────────────────────────────────────
+const CONFIG = {
+  // Base URL Azure Functions (ganti setelah deploy)
+  // Contoh: ***REMOVED_AZURE_FUNCTION_URL***
+  API_BASE: window.AZURE_FUNCTION_URL || "***REMOVED_AZURE_FUNCTION_URL***",
+  // Function Key (dari Azure Portal > Functions > App Keys)
+  FUNCTION_KEY: window.AZURE_FUNCTION_KEY || "GANTI_DENGAN_FUNCTION_KEY",
+  AUTO_REFRESH_MS: 30000,
+};
+
+// ────────────────────────────────────────────────
+// STATE
+// ────────────────────────────────────────────────
+let allData    = [];
+let statusChart = null;
+let selectedFile = null;
+let refreshTimer = null;
+
+// ────────────────────────────────────────────────
+// INIT
+// ────────────────────────────────────────────────
+document.addEventListener("DOMContentLoaded", () => {
+  startClock();
+  initChart();
+  fetchAll();
+  setupDragDrop();
+  refreshTimer = setInterval(fetchAll, CONFIG.AUTO_REFRESH_MS);
+  addLog("info", "Dashboard aktif — auto-refresh setiap 30 detik");
+});
+
+// ────────────────────────────────────────────────
+// CLOCK
+// ────────────────────────────────────────────────
+function startClock() {
+  const el = document.getElementById("clock");
+  const tick = () => { el.textContent = new Date().toLocaleTimeString("id-ID"); };
+  tick(); setInterval(tick, 1000);
+}
+
+// ────────────────────────────────────────────────
+// API CALLS
+// ────────────────────────────────────────────────
+async function apiGet(path) {
+  const url = `${CONFIG.API_BASE}/${path}&code=${CONFIG.FUNCTION_KEY}`;
+  const res = await fetch(url.replace("&&", "?").replace("?&", "?"));
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return res.json();
+}
+
+async function apiPost(path, body) {
+  const url = `${CONFIG.API_BASE}/${path}?code=${CONFIG.FUNCTION_KEY}`;
+  const res = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return res.json();
+}
+
+async function fetchAll() {
+  await Promise.all([fetchStats(), fetchData()]);
+}
+
+async function fetchStats() {
+  try {
+    const { stats } = await apiGet("stats?");
+    document.getElementById("s-total").textContent     = stats.total_records;
+    document.getElementById("s-processed").textContent = stats.processed;
+    document.getElementById("s-error").textContent     = stats.errors;
+    const anomaly = stats.total_records - stats.processed - stats.errors;
+    document.getElementById("s-anomaly").textContent   = Math.max(0, anomaly);
+    document.getElementById("chart-updated").textContent = new Date().toLocaleTimeString("id-ID");
+    updateChart(stats);
+    addLog("success", `Stats diperbarui — Total: ${stats.total_records} record`);
+  } catch (e) {
+    // Demo mode: pakai data dummy
+    loadDemoStats();
+    addLog("warn", "Mode demo — API tidak terhubung");
+  }
+}
+
+async function fetchData() {
+  const status = document.getElementById("filter-status").value;
+  try {
+    const path = status ? `data?status=${status}&limit=100` : `data?limit=100`;
+    const res  = await apiGet(path);
+    allData = res.data || [];
+  } catch (e) {
+    allData = getDemoData();
+  }
+  renderTable(allData);
+}
+
+function applyFilter() { renderTable(allData); }
+
+// ────────────────────────────────────────────────
+// CHART
+// ────────────────────────────────────────────────
+function initChart() {
+  const ctx = document.getElementById("statusChart").getContext("2d");
+  statusChart = new Chart(ctx, {
+    type: "doughnut",
+    data: {
+      labels: ["Processed", "Anomaly", "Error"],
+      datasets: [{
+        data: [0, 0, 0],
+        backgroundColor: ["#10b981", "#f59e0b", "#ef4444"],
+        borderColor: "#111827", borderWidth: 3,
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { labels: { color: "#94a3b8", font: { family: "Space Mono", size: 11 } } }
+      },
+      cutout: "68%",
+    }
+  });
+}
+
+function updateChart(stats) {
+  const anomaly = Math.max(0, stats.total_records - stats.processed - stats.errors);
+  statusChart.data.datasets[0].data = [stats.processed, anomaly, stats.errors];
+  statusChart.update();
+}
+
+// ────────────────────────────────────────────────
+// TABLE
+// ────────────────────────────────────────────────
+function renderTable(data) {
+  const tbody = document.getElementById("data-tbody");
+  const filter = document.getElementById("filter-status").value;
+  const filtered = filter ? data.filter(r => r.status === filter) : data;
+
+  if (!filtered.length) {
+    tbody.innerHTML = `<tr><td colspan="6" class="empty">Belum ada data.</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = filtered.map(r => `
+    <tr>
+      <td class="mono">${r.id ? r.id.slice(0,8)+"…" : "—"}</td>
+      <td class="mono">${r.processed_at ? new Date(r.processed_at).toLocaleString("id-ID") : "—"}</td>
+      <td>${r.category || "—"}</td>
+      <td><span class="badge badge-${r.status}">${r.status}</span></td>
+      <td>${r.summary || "—"}</td>
+      <td class="mono">${r.source_file ? r.source_file.split("/").pop() : "—"}</td>
+    </tr>
+  `).join("");
+}
+
+// ────────────────────────────────────────────────
+// UPLOAD
+// ────────────────────────────────────────────────
+function handleFile(file) {
+  if (!file) return;
+  selectedFile = file;
+  document.getElementById("file-info").textContent = `${file.name} (${(file.size/1024).toFixed(1)} KB)`;
+  document.getElementById("btnUpload").disabled = false;
+
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const parsed = JSON.parse(e.target.result);
+      const preview = document.getElementById("preview-content");
+      preview.textContent = JSON.stringify(parsed, null, 2).slice(0, 1500) + "\n// ... (preview dipotong)";
+      document.getElementById("json-preview").style.display = "block";
+      addLog("info", `File dipilih: ${file.name}`);
+    } catch {
+      showToast("File bukan JSON valid!", "error");
+    }
+  };
+  reader.readAsText(file);
+}
+
+async function uploadFile() {
+  if (!selectedFile) return;
+  const reader = new FileReader();
+  reader.onload = async e => {
+    try {
+      const data = JSON.parse(e.target.result);
+      addLog("info", `Mengupload ${selectedFile.name}...`);
+      const btn = document.getElementById("btnUpload");
+      btn.disabled = true; btn.textContent = "Memproses...";
+
+      const res = await apiPost("upload?", data);
+      showToast(res.message || "Berhasil diproses!", "success");
+      addLog("success", res.message || "Data berhasil diproses & disimpan ke Cosmos DB");
+      setTimeout(fetchAll, 1000);
+    } catch (e) {
+      showToast("Gagal upload: " + e.message, "error");
+      addLog("error", "Upload gagal: " + e.message);
+    } finally {
+      const btn = document.getElementById("btnUpload");
+      btn.disabled = false; btn.textContent = "⬆ Upload & Proses";
+    }
+  };
+  reader.readAsText(selectedFile);
+}
+
+// ────────────────────────────────────────────────
+// DRAG & DROP
+// ────────────────────────────────────────────────
+function setupDragDrop() {
+  const zone = document.getElementById("dropzone");
+  zone.addEventListener("dragover", e => { e.preventDefault(); zone.classList.add("drag-over"); });
+  zone.addEventListener("dragleave", () => zone.classList.remove("drag-over"));
+  zone.addEventListener("drop", e => {
+    e.preventDefault(); zone.classList.remove("drag-over");
+    const file = e.dataTransfer.files[0];
+    if (file) handleFile(file);
+  });
+}
+
+// ────────────────────────────────────────────────
+// LOG
+// ────────────────────────────────────────────────
+function addLog(type, msg) {
+  const el   = document.getElementById("log-stream");
+  const time = new Date().toLocaleTimeString("id-ID");
+  const line = document.createElement("div");
+  line.className = "log-line";
+  line.innerHTML = `<span class="log-time">${time}</span><span class="log-${type}">${msg}</span>`;
+  el.appendChild(line);
+  el.scrollTop = el.scrollHeight;
+}
+function clearLog() {
+  document.getElementById("log-stream").innerHTML = "";
+}
+
+// ────────────────────────────────────────────────
+// TOAST
+// ────────────────────────────────────────────────
+function showToast(msg, type="success") {
+  const el = document.getElementById("toast");
+  el.className = `show ${type}`;
+  el.innerHTML = (type === "success" ? "✅ " : "❌ ") + msg;
+  setTimeout(() => el.className = "", 3500);
+}
+
+// ────────────────────────────────────────────────
+// DEMO DATA (saat API belum terhubung)
+// ────────────────────────────────────────────────
+function loadDemoStats() {
+  document.getElementById("s-total").textContent     = 142;
+  document.getElementById("s-processed").textContent = 128;
+  document.getElementById("s-anomaly").textContent   = 9;
+  document.getElementById("s-error").textContent     = 5;
+  statusChart.data.datasets[0].data = [128, 9, 5];
+  statusChart.update();
+}
+
+function getDemoData() {
+  return [
+    { id: "a1b2c3d4-0001", processed_at: new Date().toISOString(), category: "sensor", status: "processed", summary: "Suhu: 32°C", source_file: "sensor_data.json" },
+    { id: "a1b2c3d4-0002", processed_at: new Date().toISOString(), category: "sensor", status: "anomaly",   summary: "Suhu: 85°C", source_file: "sensor_data.json" },
+    { id: "a1b2c3d4-0003", processed_at: new Date().toISOString(), category: "log",    status: "error",     summary: "[ERROR] Koneksi database timeout", source_file: "app_log.json" },
+    { id: "a1b2c3d4-0004", processed_at: new Date().toISOString(), category: "log",    status: "processed", summary: "[INFO] Backup selesai", source_file: "app_log.json" },
+    { id: "a1b2c3d4-0005", processed_at: new Date().toISOString(), category: "generic",status: "processed", summary: "Record dari batch-upload.json", source_file: "batch-upload.json" },
+  ];
+}
+</script>
+</body>
+</html>
