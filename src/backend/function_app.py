@@ -171,3 +171,5 @@ def _process_data(data, source_file: str) -> list:
         processed.append(record)
 
     return processed
+
+# Triggering rebuild after deleting WEBSITE_RUN_FROM_PACKAGE
