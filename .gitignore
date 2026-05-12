@@ -55,3 +55,6 @@ Thumbs.db
 desktop.ini
 .DS_Store
 .local.settings.json
+
+# Sembunyikan kunci API
+src/dashboard/env.js
