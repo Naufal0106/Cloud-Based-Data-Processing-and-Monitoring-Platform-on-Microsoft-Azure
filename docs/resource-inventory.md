@@ -1,47 +1,79 @@
-# resource-inventory.md
+# Inventaris Resource Cloud
 
-# INVENTARIS RESOURCE CLOUD
-## Minggu 2 – Kelompok 11
+Final Project Cloud Computing - Kelompok 11
 
 ## Tujuan
-Mendokumentasikan seluruh resource cloud yang dibuat pada tahap implementasi infrastruktur dasar.
 
-## Daftar Resource
+Dokumen ini mendata resource yang digunakan pada platform data processing dan monitoring. Resource dibagi menjadi layanan Cloudflare untuk frontend dan layanan Azure untuk backend serta infrastruktur pendukung.
 
-| No | Nama Resource | Tipe Resource | Region | Fungsi |
-|----|--------------|--------------|--------|--------|
-| 1 | RG-Kelompok11 | Resource Group | Indonesia Central | Wadah seluruh resource proyek |
-| 2 | VNet-Utama-Kelompok11 | Virtual Network | Indonesia Central | Jaringan utama cloud |
-| 3 | Subnet-Publik | Subnet | Indonesia Central | Jalur resource publik |
-| 4 | Subnet-Privat | Subnet | Indonesia Central | Jalur resource internal |
-| 5 | IAM Role Assignment | Identity Access | Indonesia Central | Hak akses anggota tim |
+## Resource Cloudflare
 
-## Resource yang Direncanakan Minggu Berikutnya
+| Nama | Tipe | Fungsi | Status |
+| --- | --- | --- | --- |
+| Cloudflare Pages Project | Static hosting | Hosting dashboard `src/dashboard` | Aktif/target deployment |
+| kelompok11cc.my.id | Custom domain | Domain production dashboard | Nameserver Cloudflare |
 
-| No | Nama Resource | Tipe | Fungsi |
-|----|--------------|------|--------|
-| 1 | VM-Web01 | Virtual Machine | Web server |
-| 2 | VM-App01 | Virtual Machine | Backend server |
-| 3 | Azure Blob Storage | Storage | Penyimpanan file |
-| 4 | Azure Cosmos DB | Database | Penyimpanan data |
-| 5 | Azure Monitor | Monitoring | Monitoring sistem |
+## Resource Azure
 
-## Status Resource
+| No | Nama Resource | Tipe | Region | Fungsi | Status |
+| --- | --- | --- | --- | --- | --- |
+| 1 | RG-Kelompok11 | Resource Group | southeastasia | Wadah seluruh resource Azure | Terraform |
+| 2 | VNet-Utama-Kelompok11 | Virtual Network | southeastasia | Jaringan utama | Terraform |
+| 3 | Subnet-Publik | Subnet | southeastasia | Subnet untuk resource publik | Terraform |
+| 4 | Subnet-Privat | Subnet | southeastasia | Subnet untuk resource internal | Terraform |
+| 5 | NSG-Publik-Kelompok11 | Network Security Group | southeastasia | Firewall subnet publik | Terraform |
+| 6 | NSG-Privat-Kelompok11 | Network Security Group | southeastasia | Firewall subnet privat | Terraform |
+| 7 | IP-Publik-Web-Kelompok11 | Public IP | southeastasia | IP publik untuk VM web | Terraform |
+| 8 | NIC-Web-Kelompok11 | Network Interface | southeastasia | NIC untuk VM web | Terraform |
+| 9 | VM-Web-Kelompok11 | Linux Virtual Machine | southeastasia | Web atau management server opsional | Terraform |
+| 10 | stwebdashboardk11 | Storage Account | southeastasia | Static website backup/opsional | Terraform |
+| 11 | stfuncmonitoringk11 | Storage Account | southeastasia | Storage internal Azure Functions dan Blob trigger | Terraform |
+| 12 | raw-data | Storage Container | southeastasia | Container input file JSON, CSV, dan Excel mentah | Terraform |
+| 13 | ASP-Serverless-Kelompok11 | App Service Plan | southeastasia | Consumption plan Azure Functions | Terraform |
+| 14 | func-backend-monitoring-k11 | Linux Function App | southeastasia | Backend API dan data processing | Terraform |
+| 15 | cosmos-kelompok11-monitoring | Cosmos DB Account | southeastasia | Database account NoSQL serverless | Terraform |
+| 16 | db-platform-monitoring | Cosmos DB Database | southeastasia | Database platform monitoring | Terraform |
+| 17 | telemetry-data | Cosmos DB Container | southeastasia | Penyimpanan hasil pemrosesan data | Terraform |
+| 18 | users | Cosmos DB Container | southeastasia | Penyimpanan user login/register | Terraform |
+| 19 | kv-monitoring-k11-naufal | Key Vault | southeastasia | Penyimpanan secret Cosmos DB | Terraform |
+| 20 | cosmos-connection-string | Key Vault Secret | southeastasia | Secret connection string Cosmos DB | Terraform |
+| 21 | auth-token-secret | Key Vault Secret | southeastasia | Secret tanda tangan token login | Terraform |
+| 22 | func-backend-monitoring-k11 | Application Insights | southeastasia | Observability backend | Terraform |
+| 23 | tm-monitoring-k11 | Traffic Manager Profile | Global | Routing atau endpoint failover | Terraform |
 
-| Resource | Status |
-|---------|--------|
-| Resource Group | ✅ |
-| VNet | ✅ |
-| Public Subnet | ✅ |
-| Private Subnet | ✅ |
-| IAM | ✅ |
+## Backend Runtime
 
-## Catatan
+| Komponen | Nilai |
+| --- | --- |
+| Runtime | Python |
+| Python version | 3.11 |
+| Public frontend API path | `/api` melalui Cloudflare Pages Function |
+| Production domain | `https://kelompok11cc.my.id` |
+| Telemetry container | `telemetry-data`, partition key `/deviceId` |
+| Users container | `users`, partition key `/email`, unique key `/email` |
+| Blob trigger path | `raw-data/{name}` |
+| Auth token TTL | 8 jam |
 
-- Semua resource dibuat menggunakan Terraform.
-- Penamaan resource dibuat konsisten.
-- Infrastruktur siap dikembangkan pada minggu berikutnya.
+## Endpoint Aplikasi
+
+| Method | Endpoint | Fungsi |
+| --- | --- | --- |
+| GET | `/api/hello` | Health check |
+| POST | `/api/register` | Registrasi user |
+| POST | `/api/login` | Login user |
+| GET | `/api/me` | Profil user aktif |
+| GET | `/api/stats` | Statistik total, processed, anomaly, dan error |
+| GET | `/api/data` | Data terbaru |
+| POST | `/api/upload` | Upload JSON, CSV, XLSX, atau XLS langsung |
+
+## Catatan Operasional
+
+- Frontend utama berada di Cloudflare Pages.
+- Domain production: `kelompok11cc.my.id`.
+- Azure Storage static website masih dapat digunakan sebagai backup atau demo.
+- Function key harus dikonfigurasi sebagai environment variable Cloudflare Pages Function, bukan melalui `env.js`.
+- File `env.js` tidak boleh dicommit karena dapat berisi secret.
 
 ## Kesimpulan
 
-Inventaris resource berhasil dibuat untuk mempermudah monitoring, dokumentasi, dan pengelolaan cloud infrastructure proyek.
+Resource utama proyek sudah mencakup frontend hosting, backend serverless, database, storage, secret management, monitoring, network, dan IAM. Semua resource Azure utama dikelola menggunakan Terraform agar mudah direplikasi dan diaudit.

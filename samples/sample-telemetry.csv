@@ -1,0 +1,5 @@
+deviceId,temperature,level,message
+sensor-01,32,,
+sensor-02,85,,
+app-server-01,,ERROR,Koneksi database timeout
+backup-node,,INFO,Backup selesai

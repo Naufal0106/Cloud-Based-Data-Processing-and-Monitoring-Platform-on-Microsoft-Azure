@@ -1,66 +1,53 @@
-# iam-config.md
+# Konfigurasi IAM
 
-# KONFIGURASI IAM
-## Identity & Access Management
-### Minggu 2 – Kelompok 11
+Identity and Access Management - Kelompok 11
 
 ## Tujuan
-Mengatur hak akses anggota tim terhadap resource Microsoft Azure berdasarkan prinsip Least Privilege dan Role-Based Access Control (RBAC).
+
+Dokumen ini menjelaskan pembagian akses anggota tim terhadap resource Azure berdasarkan prinsip least privilege dan Role-Based Access Control (RBAC).
 
 ## Scope Akses
 
-Seluruh akses diberikan pada:
+Scope utama role assignment:
 
-- Resource Group: RG-Kelompok11
+```text
+Resource Group: RG-Kelompok11
+```
 
-## Daftar Role Anggota
+## Role Assignment Berdasarkan Terraform
 
-| Nama Anggota | Peran | Role Azure |
-|-------------|------|-----------|
-| Naufal Ihsan Sriyanto | DevOps Engineer | Owner |
-| Zhykwa Ceryl Mavanudin | Cloud Architect | Contributor |
-| Muhammad Arifin Ilham | Backend Developer | Contributor |
-| Rendy Saputra | Security Engineer | Contributor |
+| Nama Anggota | Peran Tim | Role Azure | Tujuan |
+| --- | --- | --- | --- |
+| Naufal Ihsan Sriyanto | DevOps Engineer | Owner | Mengelola deployment dan administrasi resource |
+| Naufal Ihsan Sriyanto | DevOps Engineer | Monitoring Contributor | Mengelola monitoring dan observability |
+| Naufal Ihsan Sriyanto | DevOps Engineer | Cost Management Contributor | Mengelola budget dan optimasi biaya |
+| Rendy Saputra | Security Engineer | Security Admin | Mengelola konfigurasi keamanan dan audit |
+| Muhammad Arifin Ilham | Backend Developer | DocumentDB Account Contributor | Mengelola Cosmos DB |
+| Muhammad Arifin Ilham | Backend Developer | Website Contributor | Mengelola Azure Functions atau web app |
+| Zhykwa Ceryl Mavanudin | Cloud Architect | Network Contributor | Mengelola VNet, subnet, NSG, dan resource jaringan |
 
-## Penjelasan Tugas
+## Akses Key Vault
 
-### DevOps Engineer
-- Menjalankan Terraform
-- Deploy resource cloud
-- Monitoring deployment
-- Integrasi GitHub
-
-### Cloud Architect
-- Mendesain arsitektur cloud
-- Mengatur jaringan VNet
-- Menentukan subnet dan struktur resource
-
-### Backend Developer
-- Integrasi database
-- Azure Function
-- Backend service
-
-### Security Engineer
-- Audit keamanan
-- Review IAM
-- Security policy
-- Least privilege access
+| Principal | Permission | Tujuan |
+| --- | --- | --- |
+| Current Terraform principal | Get, List, Set, Delete, Purge, Recover | Administrasi secret saat provisioning |
+| Managed Identity Function App | Get, List | Membaca secret Cosmos DB connection string |
 
 ## Prinsip Keamanan
 
-- Akses hanya sesuai kebutuhan pekerjaan
-- Role dikelola terpusat
-- Tidak menggunakan akun bersama
-- Mudah diaudit
+- Tidak menggunakan akun bersama.
+- Akses diberikan sesuai tanggung jawab tim.
+- Secret database disimpan di Key Vault.
+- Function App menggunakan managed identity untuk membaca secret.
+- File lokal yang berisi credential, seperti `.tfvars`, `.env`, dan `src/dashboard/env.js`, tidak boleh dicommit.
 
-## Status
+## Rekomendasi Perbaikan
 
-| Item                  | Status |
-|-----------------------|--------|
-| Role Assignment       |   ✅  |
-| Scope Resource Group  |   ✅  |
-| Least Privilege       |   ✅  |
+- Gunakan Privileged Identity Management untuk role dengan privilege tinggi jika tersedia.
+- Batasi akses `Owner` hanya untuk kebutuhan deployment.
+- Audit role assignment secara berkala.
+- Gunakan federated credentials/OIDC untuk GitHub Actions jika memungkinkan.
 
 ## Kesimpulan
 
-Konfigurasi IAM berhasil diterapkan untuk seluruh anggota tim agar pengelolaan resource Azure lebih aman, terstruktur, dan sesuai tanggung jawab masing-masing.
+Konfigurasi IAM sudah dibagi sesuai peran utama tim. Model ini mendukung kolaborasi sekaligus menjaga akses tetap terkontrol.

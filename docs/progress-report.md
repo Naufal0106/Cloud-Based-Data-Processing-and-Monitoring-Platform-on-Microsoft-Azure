@@ -1,89 +1,95 @@
-# progress-report.md
+# Laporan Progres Proyek
 
-# LAPORAN PROGRES MINGGU 2
-## Final Project Cloud Computing – Kelompok 11
+Final Project Cloud Computing - Kelompok 11
 
-## Ringkasan Progress
+## Ringkasan
 
-Pada minggu ke-2, kelompok berhasil menyelesaikan implementasi fondasi infrastruktur cloud menggunakan Microsoft Azure dengan Terraform sebagai Infrastructure as Code (IaC).
+Proyek telah berkembang dari perencanaan infrastruktur Azure menjadi platform hybrid-cloud. Frontend dashboard dideploy melalui Cloudflare Pages, sedangkan backend dan pipeline data berjalan di Azure.
 
-Fokus pekerjaan berada pada pembangunan jaringan virtual, segmentasi subnet, serta pembagian hak akses anggota tim.
+## Pekerjaan yang Telah Diselesaikan
 
----
+### Infrastruktur Azure
 
-## Pekerjaan yang Berhasil Diselesaikan
+- Resource Group `RG-Kelompok11`.
+- Virtual Network `VNet-Utama-Kelompok11`.
+- Public subnet `10.0.1.0/24`.
+- Private subnet `10.0.2.0/24`.
+- Network Security Group untuk subnet publik dan privat.
+- Public IP, NIC, dan VM web opsional.
+- Storage Account untuk Azure Functions dan Blob Storage.
+- Azure Cosmos DB serverless.
+- Azure Key Vault.
+- Application Insights.
+- Traffic Manager.
 
-### Infrastruktur
+### Backend
 
-- Membuat Resource Group `RG-Kelompok11`
-- Membuat Virtual Network `VNet-Utama-Kelompok11`
-- Membuat Public Subnet `10.0.1.0/24`
-- Membuat Private Subnet `10.0.2.0/24`
+- Azure Functions menggunakan Python 3.11.
+- HTTP endpoint untuk `hello`, `register`, `login`, `me`, `stats`, `data`, dan `upload`.
+- Login/register user dengan password hash PBKDF2 dan token sesi.
+- Database user dipisahkan ke Cosmos DB container `users`.
+- Blob trigger untuk container `raw-data`.
+- Validasi parameter `limit` dan `status`.
+- Query Cosmos DB untuk filter status menggunakan parameter.
+- Record hasil proses memiliki `deviceId` agar sesuai partition key Cosmos DB.
+- Statistik menampilkan total, processed, anomaly, dan error.
 
-### Terraform
+### Frontend
 
-- Menyiapkan provider AzureRM
-- Menulis konfigurasi Terraform
-- Menjalankan inisialisasi dan deployment resource
+- Dashboard statis di `src/dashboard`.
+- UI dashboard sudah diperbarui agar lebih rapi dan responsive.
+- Layar login/register ditambahkan sebelum dashboard.
+- Mode demo tersedia jika backend proxy belum dikonfigurasi.
+- Upload JSON, CSV, XLSX, dan XLS divalidasi di sisi browser lalu diproses di backend.
+- Konfigurasi frontend menggunakan `env.js` lokal atau environment Cloudflare Pages.
 
-### IAM
+### DevOps
 
-- Membuat Role Assignment anggota tim
-- Mengatur akses berbasis peran (RBAC)
+- Terraform digunakan untuk provisioning Azure.
+- GitHub Actions digunakan untuk deploy backend ke Azure Functions.
+- `.gitignore` menjaga file secret dan local config agar tidak masuk repository.
 
 ### Dokumentasi
 
-- Menyusun network plan
-- Menyusun inventaris resource
-- Menyusun konfigurasi IAM
-
----
-
-## Kendala yang Dihadapi
-
-| Kendala | Solusi |
-|--------|-------|
-| Resource Group sudah ada | Menyesuaikan Terraform / import resource |
-| Sinkronisasi tim | Menggunakan GitHub |
-| Pembagian tugas | Menyesuaikan peran masing-masing |
-
----
+- README diperbarui sesuai arsitektur Cloudflare + Azure.
+- Dokumen arsitektur, network plan, IAM, resource inventory, dan progress report diselaraskan.
 
 ## Kontribusi Tim
 
 | Nama | Peran | Kontribusi |
-|------|------|-----------|
-| Naufal Ihsan Sriyanto | DevOps Engineer | Terraform deployment & GitHub |
-| Zhykwa Ceryl Mavanudin | Cloud Architect | Network design & dokumentasi |
-| Muhammad Arifin Ilham | Backend Developer | Persiapan backend infrastructure |
-| Rendy Saputra | Security Engineer | IAM & security planning |
+| --- | --- | --- |
+| Naufal Ihsan Sriyanto | DevOps Engineer | Terraform, CI/CD, deployment |
+| Zhykwa Ceryl Mavanudin | Cloud Architect | Arsitektur dan network design |
+| Muhammad Arifin Ilham | Backend Developer | Azure Functions dan integrasi Cosmos DB |
+| Rendy Saputra | Security Engineer | IAM, Key Vault, NSG, security review |
 
----
+## Kendala dan Solusi
 
-## Status Minggu 2
+| Kendala | Solusi |
+| --- | --- |
+| Frontend dan backend beda origin | Konfigurasi CORS di Azure Function App |
+| Function key tidak aman jika hardcoded | Simpan key di Cloudflare Pages Function environment |
+| Cosmos DB memakai partition key `/deviceId` | Backend menambahkan field `deviceId` pada setiap record |
+| File dokumentasi lama tidak sesuai arsitektur terbaru | Dokumentasi diperbarui sesuai kondisi final |
 
-| Item | Status |
-|------|--------|
-| Resource Group | ✅ |
-| VNet | ✅ |
-| Public Subnet | ✅ |
-| Private Subnet | ✅ |
-| IAM | ✅ |
-| Terraform | ✅ |
-| Dokumentasi | ✅ |
+## Status Saat Ini
 
----
+| Area | Status |
+| --- | --- |
+| Frontend dashboard | Siap uji lokal dan deploy Cloudflare Pages |
+| Backend Azure Functions | Siap deploy melalui GitHub Actions |
+| Infrastruktur Azure | Dikelola Terraform |
+| Dokumentasi | Diperbarui |
+| Security baseline | Ada, perlu hardening lanjutan untuk production |
 
-## Rencana Minggu 3
+## Rekomendasi Lanjutan
 
-- Deploy Virtual Machine
-- Setup Azure Storage
-- Setup Database
-- Implementasi layanan inti
-- Uji konektivitas sistem
-
----
+- Gunakan Cloudflare Pages Function atau API Management agar function key tidak terekspos di browser publik.
+- Batasi SSH VM hanya dari IP admin.
+- Gunakan SSH key dan nonaktifkan password authentication VM.
+- Tambahkan alert Application Insights untuk error rate dan latency.
+- Jalankan `terraform validate` setelah provider lock/cache lokal tersinkron.
 
 ## Kesimpulan
 
-Minggu ke-2 berjalan dengan baik. Fondasi infrastruktur cloud telah selesai dibangun dan proyek siap melanjutkan implementasi layanan inti pada minggu ke-3.
+Platform sudah memiliki pondasi lengkap: frontend statis, backend serverless, storage, database, secret management, observability, IaC, dan CI/CD. Proyek siap untuk uji demo dan penyempurnaan deployment.

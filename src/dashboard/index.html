@@ -3,162 +3,226 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>DataPlatform Monitor — Kelompok 11</title>
+    <title>DataPlatform Monitor - Kelompok 11</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;800&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap"
       rel="stylesheet"
     />
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <link rel="stylesheet" href="style.css" />
   </head>
   <body>
-    <header>
-      <div class="logo">
-        <div class="logo-icon">⬡</div>
-        <div class="logo-text">Data<span>Platform</span></div>
-      </div>
-      <div class="header-right">
-        <span id="clock"></span>
-        <div class="live-badge">
-          <div class="live-dot"></div>
-          LIVE
+    <section class="auth-screen" id="auth-screen">
+      <div class="auth-card">
+        <div class="brand auth-brand" aria-label="DataPlatform Monitor">
+          <span class="brand-mark">DP</span>
+          <span>
+            <strong>DataPlatform</strong>
+            <small>Kelompok 11</small>
+          </span>
         </div>
-        <button class="btn btn-ghost btn-sm" onclick="fetchAll()">
-          ↺ Refresh
-        </button>
-      </div>
-    </header>
 
-    <main>
-      <div class="stats-grid">
-        <div class="stat-card">
-          <div class="stat-label">Total Record</div>
-          <div class="stat-value" id="s-total">—</div>
-          <div class="stat-sub">Semua data masuk</div>
+        <div class="auth-copy">
+          <p class="eyebrow">Secure access</p>
+          <h1>Masuk ke Monitoring Platform</h1>
+          <p>
+            Login diperlukan sebelum melihat data, statistik, dan upload batch
+            ke backend Azure.
+          </p>
         </div>
-        <div class="stat-card">
-          <div class="stat-label">Berhasil Diproses</div>
-          <div
-            class="stat-value"
-            id="s-processed"
-            style="color: var(--success)"
-          >
-            —
-          </div>
-          <div class="stat-sub">Status: processed</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-label">Anomali</div>
-          <div class="stat-value" id="s-anomaly" style="color: var(--warning)">
-            —
-          </div>
-          <div class="stat-sub">Deteksi outlier</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-label">Error</div>
-          <div class="stat-value" id="s-error" style="color: var(--danger)">
-            —
-          </div>
-          <div class="stat-sub">Gagal diproses</div>
-        </div>
-      </div>
 
-      <div class="two-col">
-        <div class="panel">
+        <div class="auth-tabs" role="tablist" aria-label="Auth mode">
+          <button class="auth-tab active" id="tab-login" type="button">Login</button>
+          <button class="auth-tab" id="tab-register" type="button">Register</button>
+        </div>
+
+        <form class="auth-form" id="auth-form">
+          <label class="auth-field" id="name-field" hidden>
+            <span>Nama</span>
+            <input id="auth-name" type="text" autocomplete="name" />
+          </label>
+          <label class="auth-field">
+            <span>Email</span>
+            <input id="auth-email" type="email" autocomplete="email" required />
+          </label>
+          <label class="auth-field">
+            <span>Password</span>
+            <input
+              id="auth-password"
+              type="password"
+              autocomplete="current-password"
+              minlength="8"
+              required
+            />
+          </label>
+
+          <p class="auth-message" id="auth-message" role="status"></p>
+
+          <button class="btn btn-primary auth-submit" id="auth-submit" type="submit">
+            Login
+          </button>
+          <button class="btn btn-secondary auth-demo" id="auth-demo" type="button">
+            Masuk Demo
+          </button>
+        </form>
+      </div>
+    </section>
+
+    <div class="app-view" id="app-view" hidden>
+      <header class="topbar">
+        <a class="brand" href="#" aria-label="DataPlatform Monitor">
+          <span class="brand-mark">DP</span>
+          <span>
+            <strong>DataPlatform</strong>
+            <small>Kelompok 11</small>
+          </span>
+        </a>
+
+        <div class="topbar-actions">
+          <span class="clock mono" id="clock">--:--:--</span>
+          <span class="status-pill" id="connection-pill">
+            <span class="status-dot"></span>
+            <span id="connection-label">Checking</span>
+          </span>
+          <span class="user-chip" id="current-user-label"></span>
+          <button class="btn btn-secondary btn-sm" id="btnRefresh" type="button">
+            Refresh
+          </button>
+          <button class="btn btn-secondary btn-sm" id="btnLogout" type="button">
+            Logout
+          </button>
+        </div>
+      </header>
+
+      <main class="app-shell">
+      <section class="page-heading" aria-labelledby="page-title">
+        <div>
+          <p class="eyebrow">Cloud monitoring dashboard</p>
+          <h1 id="page-title">Realtime Data Processing</h1>
+          <p class="page-subtitle">
+            Frontend berjalan di Cloudflare Pages, backend dan data pipeline
+            berjalan di Microsoft Azure.
+          </p>
+        </div>
+        <div class="runtime-panel">
+          <span class="runtime-label">Backend</span>
+          <span class="runtime-value mono" id="backend-mode-label">Proxy / demo mode</span>
+          <span class="runtime-label">Security</span>
+          <span class="runtime-value mono">API key hidden</span>
+          <span class="runtime-label">Last sync</span>
+          <span class="runtime-value mono" id="last-sync">Belum sinkron</span>
+        </div>
+      </section>
+
+      <section class="stats-grid" aria-label="Ringkasan data">
+        <article class="stat-card accent-blue">
+          <span class="stat-label">Total Record</span>
+          <strong class="stat-value" id="s-total">-</strong>
+          <span class="stat-sub">Semua data tersimpan</span>
+        </article>
+        <article class="stat-card accent-green">
+          <span class="stat-label">Processed</span>
+          <strong class="stat-value" id="s-processed">-</strong>
+          <span class="stat-sub">Data berhasil diproses</span>
+        </article>
+        <article class="stat-card accent-amber">
+          <span class="stat-label">Anomaly</span>
+          <strong class="stat-value" id="s-anomaly">-</strong>
+          <span class="stat-sub">Perlu pengecekan</span>
+        </article>
+        <article class="stat-card accent-red">
+          <span class="stat-label">Error</span>
+          <strong class="stat-value" id="s-error">-</strong>
+          <span class="stat-sub">Log atau input bermasalah</span>
+        </article>
+      </section>
+
+      <section class="content-grid">
+        <article class="panel chart-panel">
           <div class="panel-header">
-            <span class="panel-title">📊 Distribusi Status</span>
-            <span class="mono" id="chart-updated">—</span>
+            <div>
+              <h2>Distribusi Status</h2>
+              <p>Komposisi data berdasarkan hasil pemrosesan.</p>
+            </div>
+            <span class="mono panel-meta" id="chart-updated">-</span>
           </div>
           <div class="chart-wrap">
             <canvas id="statusChart"></canvas>
           </div>
-        </div>
+        </article>
 
-        <div class="panel">
+        <article class="panel upload-panel">
           <div class="panel-header">
-            <span class="panel-title">📤 Upload Data JSON</span>
-          </div>
-
-          <div
-            class="upload-zone"
-            id="dropzone"
-            onclick="document.getElementById('fileInput').click()"
-          >
-            <div class="upload-icon">📂</div>
-            <div class="upload-text">
-              Drag & drop file <strong>.json</strong> ke sini<br />atau klik
-              untuk pilih file
+            <div>
+              <h2>Upload Data</h2>
+              <p>Kirim batch data melalui backend proxy yang aman.</p>
             </div>
           </div>
+
+          <button class="upload-zone" id="dropzone" type="button">
+            <span class="upload-icon">CSV</span>
+            <span class="upload-title">Pilih atau drop file data</span>
+            <span class="upload-copy">Menerima JSON, CSV, XLSX, dan XLS. Maksimal 5 MB.</span>
+          </button>
           <input
             type="file"
             id="fileInput"
-            accept=".json"
-            onchange="handleFile(this.files[0])"
+            accept=".json,.csv,.xlsx,.xls,application/json,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel"
           />
 
-          <div
-            style="
-              margin-top: 1rem;
-              display: flex;
-              gap: 0.75rem;
-              align-items: center;
-              flex-wrap: wrap;
-            "
-          >
-            <button
-              class="btn btn-primary"
-              id="btnUpload"
-              onclick="uploadFile()"
-              disabled
-            >
-              ⬆ Upload & Proses
+          <div class="upload-actions">
+            <button class="btn btn-primary" id="btnUpload" type="button" disabled>
+              Upload & Proses
             </button>
-            <span class="mono" id="file-info" style="color: var(--muted)"
-              >Belum ada file dipilih</span
-            >
+            <span class="mono file-info" id="file-info">Belum ada file</span>
           </div>
 
-          <div id="json-preview" style="display: none; margin-top: 1rem">
-            <div class="log-stream" id="preview-content"></div>
+          <div class="json-preview" id="json-preview" hidden>
+            <pre id="preview-content"></pre>
           </div>
-        </div>
-      </div>
+        </article>
+      </section>
 
-      <div class="panel">
-        <div class="panel-header">
-          <span class="panel-title">🗄 Data Records</span>
-          <div style="display: flex; gap: 0.5rem">
-            <select
-              id="filter-status"
-              onchange="applyFilter()"
-              style="
-                background: var(--bg);
-                border: 1px solid var(--border);
-                color: var(--text);
-                padding: 0.3rem 0.6rem;
-                border-radius: 6px;
-                font-size: 0.75rem;
-              "
-            >
-              <option value="">Semua Status</option>
-              <option value="processed">Processed</option>
-              <option value="anomaly">Anomaly</option>
-              <option value="error">Error</option>
-              <option value="generic">Generic</option>
-            </select>
-            <button class="btn btn-ghost btn-sm" onclick="fetchData()">
-              ↺
+      <section class="panel data-panel">
+        <div class="panel-header panel-header-wide">
+          <div>
+            <h2>Data Records</h2>
+            <p>Record terbaru dari Cosmos DB atau data demo saat API belum aktif.</p>
+          </div>
+          <div class="toolbar">
+            <label class="field">
+              <span>Status</span>
+              <select id="filter-status">
+                <option value="">Semua</option>
+                <option value="processed">Processed</option>
+                <option value="anomaly">Anomaly</option>
+                <option value="error">Error</option>
+              </select>
+            </label>
+            <label class="field">
+              <span>Kategori</span>
+              <select id="filter-category">
+                <option value="">Semua</option>
+                <option value="sensor">Sensor</option>
+                <option value="log">Log</option>
+                <option value="generic">Generic</option>
+              </select>
+            </label>
+            <button class="btn btn-secondary btn-sm" id="btnDataRefresh" type="button">
+              Reload
             </button>
           </div>
         </div>
+
         <div class="table-wrap">
           <table>
             <thead>
               <tr>
                 <th>ID</th>
-                <th>Waktu Proses</th>
+                <th>Waktu</th>
+                <th>Device</th>
                 <th>Kategori</th>
                 <th>Status</th>
                 <th>Ringkasan</th>
@@ -167,31 +231,49 @@
             </thead>
             <tbody id="data-tbody">
               <tr>
-                <td colspan="6" class="empty">Memuat data...</td>
+                <td colspan="7" class="empty">Memuat data...</td>
               </tr>
             </tbody>
           </table>
         </div>
-      </div>
+      </section>
 
-      <div class="panel">
-        <div class="panel-header">
-          <span class="panel-title">📋 Activity Log</span>
-          <button class="btn btn-ghost btn-sm" onclick="clearLog()">
+      <section class="panel log-panel">
+        <div class="panel-header panel-header-wide">
+          <div>
+            <h2>Activity Log</h2>
+            <p>Aktivitas dashboard selama sesi browser berjalan.</p>
+          </div>
+          <button class="btn btn-secondary btn-sm" id="btnClearLog" type="button">
             Bersihkan
           </button>
         </div>
-        <div class="log-stream" id="log-stream">
+        <div class="log-stream" id="log-stream" aria-live="polite">
           <div class="log-line">
-            <span class="log-time">--:--:--</span
-            ><span class="log-info">Dashboard diinisialisasi...</span>
+            <span class="log-time">--:--:--</span>
+            <span class="log-info">Dashboard diinisialisasi.</span>
           </div>
         </div>
-      </div>
-    </main>
+      </section>
+      </main>
+    </div>
 
-    <div id="toast"></div>
-    <script src="env.js"></script>
-    <script src="script.js"></script>
+    <div id="toast" role="status" aria-live="polite"></div>
+
+    <script>
+      (function loadConfigAndApp() {
+        function loadApp() {
+          const appScript = document.createElement("script");
+          appScript.src = "script.js";
+          document.body.appendChild(appScript);
+        }
+
+        const configScript = document.createElement("script");
+        configScript.src = "env.js";
+        configScript.onload = loadApp;
+        configScript.onerror = loadApp;
+        document.head.appendChild(configScript);
+      })();
+    </script>
   </body>
 </html>
