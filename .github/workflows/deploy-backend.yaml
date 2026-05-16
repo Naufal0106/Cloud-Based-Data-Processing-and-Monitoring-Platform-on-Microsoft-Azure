@@ -53,18 +53,15 @@ jobs:
 
       - name: 'Verify Azure Functions indexing'
         run: |
-          for attempt in 1 2 3 4 5 6; do
-            functions="$(az functionapp function list \
-              --name 'func-backend-monitoring-k11' \
-              --resource-group 'RG-Kelompok11' \
-              --query '[].name' \
-              -o tsv)"
-            if [ -n "$functions" ]; then
-              echo "$functions"
+          for attempt in 1 2 3 4 5 6 7 8; do
+            status="$(curl -sS -o /tmp/function-health.json -w '%{http_code}' \
+              'https://func-backend-monitoring-k11.azurewebsites.net/api/hello' || true)"
+            if [ "$status" = "200" ]; then
+              cat /tmp/function-health.json
               exit 0
             fi
-            echo "Function indexing not ready yet, attempt $attempt/6"
+            echo "Function health check returned $status, attempt $attempt/8"
             sleep 30
           done
-          echo "Azure Functions indexing did not expose any functions in time."
+          echo "Azure Functions health check did not pass in time."
           exit 1
