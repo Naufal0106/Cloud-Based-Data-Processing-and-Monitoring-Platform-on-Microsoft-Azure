@@ -211,7 +211,7 @@ Konfigurasi API frontend dibaca dari variable global browser:
 window.DATA_API_BASE = "/api";
 ```
 
-Untuk local/demo deployment, salin `src/dashboard/env.example.js` menjadi `src/dashboard/env.js` jika ingin override path proxy. File `env.js` sudah masuk `.gitignore`.
+Untuk local/demo deployment, salin `src/dashboard/env.example.js` menjadi `src/dashboard/env.js` jika ingin override path proxy. File `env.js` sudah masuk `.gitignore`. Nilai `DATA_API_BASE` harus path same-origin seperti `/api`; URL eksternal akan diabaikan oleh dashboard agar token tidak terkirim ke domain lain.
 
 Untuk deployment publik, simpan `AZURE_FUNCTION_URL` dan `AZURE_FUNCTION_KEY` sebagai environment variable Cloudflare Pages Function, bukan di frontend.
 
@@ -269,12 +269,7 @@ Custom domain:
 kelompok11cc.my.id
 ```
 
-Nameserver domain sudah diarahkan ke Cloudflare:
-
-```text
-***REMOVED_NAMESERVER***
-***REMOVED_NAMESERVER***
-```
+Nameserver domain sudah diarahkan ke Cloudflare. Detail nameserver tidak dicantumkan di repository publik.
 
 Simpan `AZURE_FUNCTION_URL` dan `AZURE_FUNCTION_KEY` sebagai environment variable Cloudflare Pages Function agar URL Azure dan function key tidak terlihat di browser.
 

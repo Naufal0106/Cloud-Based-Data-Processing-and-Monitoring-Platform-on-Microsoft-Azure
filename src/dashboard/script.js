@@ -7,7 +7,7 @@ const AUTH_USER_KEY = "k11_auth_user";
 const LOCAL_PREVIEW_HOSTS = new Set(["localhost", "127.0.0.1", "::1"]);
 
 const CONFIG = {
-  API_BASE: (window.DATA_API_BASE || DEFAULT_API_BASE).replace(/\/+$/, ""),
+  API_BASE: normalizeApiBase(window.DATA_API_BASE || DEFAULT_API_BASE),
   AUTO_REFRESH_MS,
 };
 
@@ -199,13 +199,13 @@ function saveSession(token, user, isDemoSession) {
   state.authToken = token;
   state.currentUser = user;
   state.isDemoSession = isDemoSession;
-  localStorage.setItem(AUTH_TOKEN_KEY, token);
-  localStorage.setItem(AUTH_USER_KEY, JSON.stringify({ ...user, isDemoSession }));
+  sessionStorage.setItem(AUTH_TOKEN_KEY, token);
+  sessionStorage.setItem(AUTH_USER_KEY, JSON.stringify({ ...user, isDemoSession }));
 }
 
 function restoreSession() {
-  const token = localStorage.getItem(AUTH_TOKEN_KEY);
-  const rawUser = localStorage.getItem(AUTH_USER_KEY);
+  const token = sessionStorage.getItem(AUTH_TOKEN_KEY);
+  const rawUser = sessionStorage.getItem(AUTH_USER_KEY);
   if (!token || !rawUser) return;
 
   try {
@@ -223,8 +223,8 @@ function clearSession() {
   state.currentUser = null;
   state.isDemoSession = false;
   state.apiOnline = false;
-  localStorage.removeItem(AUTH_TOKEN_KEY);
-  localStorage.removeItem(AUTH_USER_KEY);
+  sessionStorage.removeItem(AUTH_TOKEN_KEY);
+  sessionStorage.removeItem(AUTH_USER_KEY);
 }
 
 function showAuth() {
@@ -323,6 +323,15 @@ function buildUrl(path, params = {}) {
   });
 
   return url;
+}
+
+function normalizeApiBase(rawBase) {
+  const base = String(rawBase || DEFAULT_API_BASE).trim();
+  if (!base.startsWith("/") || base.startsWith("//")) {
+    return DEFAULT_API_BASE;
+  }
+
+  return `/${base.replace(/^\/+|\/+$/g, "") || "api"}`;
 }
 
 async function apiGet(path, params, options = {}) {

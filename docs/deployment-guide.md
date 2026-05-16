@@ -40,6 +40,7 @@ Catatan:
 
 - `src/dashboard/env.js` sudah masuk `.gitignore`.
 - Frontend hanya memanggil proxy `/api`, bukan Azure Functions langsung.
+- Nilai `DATA_API_BASE` harus path same-origin seperti `/api`; URL eksternal akan diabaikan oleh dashboard.
 
 ## Deployment Frontend ke Cloudflare Pages
 
@@ -51,14 +52,7 @@ Build output directory: src/dashboard
 Functions directory: functions
 ```
 
-Cloudflare Pages Function pada `functions/api/[[path]].js` membutuhkan environment variable berikut:
-
-```text
-AZURE_FUNCTION_URL=<azure-function-base-url>
-AZURE_FUNCTION_KEY=***REMOVED***
-```
-
-Nilai tersebut disimpan di Cloudflare environment, bukan di file frontend. Browser hanya melihat request ke `/api`.
+Cloudflare Pages Function pada `functions/api/[[path]].js` membutuhkan environment variable server-side untuk Azure Function base URL dan function key. Isi nilainya langsung di dashboard Cloudflare Pages, bukan di file repository atau frontend. Browser hanya melihat request ke `/api`.
 
 ## Konfigurasi Auth Backend
 

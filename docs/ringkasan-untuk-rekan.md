@@ -247,8 +247,8 @@ Cosmos DB container users
 Jika login berhasil:
 
 1. Backend mengembalikan token sesi.
-2. Dashboard menyimpan token di browser local storage.
-3. Request ke `/api/stats`, `/api/data`, dan `/api/upload` mengirim header:
+2. Dashboard menyimpan token di `sessionStorage`, sehingga token tidak bertahan permanen setelah sesi browser ditutup.
+3. Request ke `/api/stats`, `/api/data`, `/api/upload`, dan endpoint admin mengirim header:
 
 ```text
 Authorization: Bearer <token>
