@@ -33,10 +33,17 @@ jobs:
               SCM_DO_BUILD_DURING_DEPLOYMENT=true \
               ENABLE_ORYX_BUILD=true
 
+      - name: 'Create backend package'
+        run: |
+          cd src/backend
+          zip -r ../../backend.zip . -x '__pycache__/*' '*.pyc'
+
       - name: 'Deploy to Azure Function'
-        uses: azure/functions-action@v1
-        with:
-          app-name: 'func-backend-monitoring-k11'
-          package: './src/backend'
-          scm-do-build-during-deployment: true
-          enable-oryx-build: true
+        run: |
+          az functionapp deployment source config-zip \
+            --name 'func-backend-monitoring-k11' \
+            --resource-group 'RG-Kelompok11' \
+            --src backend.zip
+          az functionapp restart \
+            --name 'func-backend-monitoring-k11' \
+            --resource-group 'RG-Kelompok11'
