@@ -22,6 +22,11 @@ override.tf.json
 *.tfvars
 *.tfvars.json
 
+# Terraform source for this project is kept out of the public repo.
+infra/*.tf
+infra/*.tf.json
+infra/.terraform.lock.hcl
+
 # ===============================
 # Secrets / Credentials
 # ===============================
