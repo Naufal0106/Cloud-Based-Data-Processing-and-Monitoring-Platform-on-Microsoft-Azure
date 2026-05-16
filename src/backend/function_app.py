@@ -5,11 +5,13 @@ import hmac
 import io
 import json
 import logging
+import math
 import os
 import re
 import secrets
 import time
 import uuid
+from collections import Counter
 from datetime import datetime, timezone
 from email.parser import BytesParser
 from email.policy import default as email_policy
@@ -27,6 +29,9 @@ DEFAULT_LIMIT = 50
 MAX_LIMIT = 200
 MAX_UPLOAD_BYTES = 5 * 1024 * 1024
 MAX_UPLOAD_RECORDS = 1000
+MAX_ANALYTICS_RECORDS = 500
+MAX_PROFILE_COLUMNS = 40
+MAX_CHART_BUCKETS = 8
 SUPPORTED_UPLOAD_EXTENSIONS = {".json", ".csv", ".xlsx", ".xls"}
 USER_ROLES = {"admin", "user"}
 ADMIN_ROLE = "admin"
@@ -216,19 +221,85 @@ def upload_data(req: func.HttpRequest) -> func.HttpResponse:
         return error_response("Payload harus berupa object atau array record", 400)
 
     try:
+        clean_requested = parse_bool_param(req.params.get("clean"))
+        cleaning = None
+        if clean_requested:
+            data, cleaning = clean_data_payload(data)
+
         processed = process_data(data, source_file=source_file)
         saved_count = save_to_cosmos(processed)
+        analysis = build_data_science_payload(data, source_file, processed)
         return json_response(
             {
                 "success": True,
                 "message": f"{saved_count} record berhasil diproses dan disimpan.",
                 "count": saved_count,
+                "cleaned": clean_requested,
+                "cleaning": cleaning,
+                "profile": analysis["profile"],
+                "quality": analysis["quality"],
+                "charts": analysis["charts"],
+                "recommendations": analysis["recommendations"],
             },
             201,
         )
     except Exception:
         logging.exception("[POST /upload] Error")
         return error_response("Gagal memproses dan menyimpan data")
+
+
+@app.route(route="analyze", methods=["POST"], auth_level=func.AuthLevel.FUNCTION)
+def analyze_upload(req: func.HttpRequest) -> func.HttpResponse:
+    auth_error = require_auth(req)
+    if auth_error:
+        return auth_error
+
+    try:
+        data, source_file = parse_upload_request(req)
+    except ValueError as exc:
+        logging.warning("[POST /analyze] Payload tidak valid: %s", exc)
+        return error_response(str(exc), 400)
+
+    if not is_valid_payload(data):
+        return error_response("Payload harus berupa object atau array record", 400)
+
+    try:
+        processed_preview = process_data(data, source_file=source_file)
+        analysis = build_data_science_payload(data, source_file, processed_preview)
+        return json_response({"success": True, **analysis})
+    except Exception:
+        logging.exception("[POST /analyze] Error")
+        return error_response("Gagal menganalisis data")
+
+
+@app.route(route="analytics", methods=["GET"], auth_level=func.AuthLevel.FUNCTION)
+def get_analytics(req: func.HttpRequest) -> func.HttpResponse:
+    auth_error = require_auth(req)
+    if auth_error:
+        return auth_error
+
+    try:
+        limit = parse_analytics_limit(req.params.get("limit"))
+    except ValueError as exc:
+        return error_response(str(exc), 400)
+
+    try:
+        container = get_cosmos_container()
+        items = list(
+            container.query_items(
+                query=(
+                    f"SELECT TOP {limit} * FROM c WHERE {TELEMETRY_FILTER} "
+                    "ORDER BY c.processed_at DESC"
+                ),
+                enable_cross_partition_query=True,
+            )
+        )
+        raw_records = [item.get("raw", item) if isinstance(item, dict) else item for item in items]
+        analysis = build_data_science_payload(raw_records, "cosmos-telemetry", items)
+        return json_response({"success": True, "count": len(items), **analysis})
+    except Exception:
+        logging.exception("[GET /analytics] Error")
+        return error_response("Gagal mengambil analitik data")
 
 
 @app.route(route="register", methods=["POST"], auth_level=func.AuthLevel.FUNCTION)
@@ -744,6 +815,716 @@ def format_size(bytes_count: int) -> str:
     if bytes_count < 1024 * 1024:
         return f"{bytes_count // 1024} KB"
     return f"{bytes_count // 1024 // 1024} MB"
+
+
+def build_data_science_payload(
+    data: Any,
+    source_file: str,
+    processed_records: list[dict[str, Any]] | None = None,
+) -> dict[str, Any]:
+    records = to_record_list(data)
+    profile = build_data_profile(records)
+    quality = build_quality_report(records, profile)
+    _, cleaning = clean_records(records, profile)
+
+    return {
+        "source_file": source_file,
+        "profile": profile,
+        "quality": quality,
+        "cleaning": cleaning,
+        "recommendations": build_cleaning_recommendations(quality, cleaning),
+        "charts": build_chart_payload(records, processed_records or []),
+        "sample": records[:5],
+        "generated_at": datetime.now(timezone.utc).isoformat(),
+    }
+
+
+def to_record_list(data: Any) -> list[dict[str, Any]]:
+    raw_records = data if isinstance(data, list) else [data]
+    records = []
+
+    for item in raw_records:
+        if isinstance(item, dict):
+            records.append(item)
+        else:
+            records.append({"value": item})
+
+    return records
+
+
+def build_data_profile(records: list[dict[str, Any]]) -> dict[str, Any]:
+    columns = collect_columns(records)
+    profiled_columns = [
+        profile_column(column, records)
+        for column in columns[:MAX_PROFILE_COLUMNS]
+    ]
+
+    missing_cells = sum(column["missing_count"] for column in profiled_columns)
+    total_cells = len(records) * len(columns)
+    numeric_columns = [
+        column["name"]
+        for column in profiled_columns
+        if column["data_type"] == "numeric"
+    ]
+    categorical_columns = [
+        column["name"]
+        for column in profiled_columns
+        if column["data_type"] in {"text", "boolean"}
+    ]
+
+    return {
+        "record_count": len(records),
+        "column_count": len(columns),
+        "profiled_column_count": len(profiled_columns),
+        "truncated": len(columns) > MAX_PROFILE_COLUMNS,
+        "missing_cells": missing_cells,
+        "missing_cell_pct": round((missing_cells / total_cells) * 100, 2)
+        if total_cells
+        else 0,
+        "duplicate_rows": count_duplicate_records(records),
+        "numeric_columns": numeric_columns,
+        "categorical_columns": categorical_columns,
+        "columns": profiled_columns,
+    }
+
+
+def collect_columns(records: list[dict[str, Any]]) -> list[str]:
+    seen = set()
+    columns = []
+
+    for record in records:
+        for key in record.keys():
+            if key not in seen:
+                seen.add(key)
+                columns.append(key)
+
+    return columns
+
+
+def profile_column(column: str, records: list[dict[str, Any]]) -> dict[str, Any]:
+    values = [record.get(column) for record in records]
+    present_values = [value for value in values if has_value(value)]
+    missing_count = len(values) - len(present_values)
+    type_counts = Counter(detect_value_type(value) for value in present_values)
+    numeric_values = [
+        number
+        for value in present_values
+        if (number := coerce_number(value)) is not None
+    ]
+    datetime_values = [
+        value
+        for value in present_values
+        if detect_value_type(value) == "datetime"
+    ]
+    boolean_values = [
+        value
+        for value in present_values
+        if detect_value_type(value) == "boolean"
+    ]
+
+    data_type = infer_column_type(
+        present_count=len(present_values),
+        type_counts=type_counts,
+        numeric_count=len(numeric_values),
+        datetime_count=len(datetime_values),
+        boolean_count=len(boolean_values),
+    )
+    top_values = Counter(canonical_preview(value) for value in present_values).most_common(5)
+    profile = {
+        "name": column,
+        "data_type": data_type,
+        "missing_count": missing_count,
+        "missing_pct": round((missing_count / len(values)) * 100, 2) if values else 0,
+        "unique_count": len({canonical_record(value) for value in present_values}),
+        "top_values": [
+            {"value": value, "count": count}
+            for value, count in top_values
+        ],
+        "sample_values": [safe_preview(value) for value in present_values[:3]],
+        "type_counts": dict(type_counts),
+    }
+
+    if numeric_values:
+        profile["numeric"] = summarize_numbers(numeric_values)
+
+    return profile
+
+
+def infer_column_type(
+    present_count: int,
+    type_counts: Counter,
+    numeric_count: int,
+    datetime_count: int,
+    boolean_count: int,
+) -> str:
+    if present_count == 0:
+        return "empty"
+
+    if numeric_count / present_count >= 0.8:
+        return "numeric"
+    if boolean_count / present_count >= 0.8:
+        return "boolean"
+    if datetime_count / present_count >= 0.8:
+        return "datetime"
+    if len(type_counts) > 1:
+        return "mixed"
+
+    return next(iter(type_counts), "text")
+
+
+def summarize_numbers(values: list[float]) -> dict[str, float]:
+    sorted_values = sorted(values)
+    count = len(sorted_values)
+    total = sum(sorted_values)
+    average = total / count if count else 0
+    variance = sum((value - average) ** 2 for value in sorted_values) / count if count else 0
+    middle = count // 2
+    median_value = (
+        sorted_values[middle]
+        if count % 2
+        else (sorted_values[middle - 1] + sorted_values[middle]) / 2
+    )
+
+    return {
+        "min": round(sorted_values[0], 4),
+        "max": round(sorted_values[-1], 4),
+        "mean": round(average, 4),
+        "median": round(median_value, 4),
+        "stddev": round(math.sqrt(variance), 4),
+    }
+
+
+def build_quality_report(
+    records: list[dict[str, Any]],
+    profile: dict[str, Any],
+) -> dict[str, Any]:
+    record_count = profile["record_count"]
+    column_count = profile["column_count"]
+    missing_cells = profile["missing_cells"]
+    duplicate_rows = profile["duplicate_rows"]
+    invalid_temperature_rows = count_invalid_temperature(records)
+    mixed_columns = [
+        column["name"]
+        for column in profile["columns"]
+        if column["data_type"] == "mixed"
+    ]
+    empty_columns = [
+        column["name"]
+        for column in profile["columns"]
+        if column["data_type"] == "empty"
+    ]
+    issues = []
+
+    if missing_cells:
+        issues.append(
+            {
+                "type": "missing_values",
+                "severity": "warn",
+                "message": f"{missing_cells} cell kosong/null ditemukan.",
+                "affected": missing_cells,
+            }
+        )
+    if duplicate_rows:
+        issues.append(
+            {
+                "type": "duplicate_rows",
+                "severity": "warn",
+                "message": f"{duplicate_rows} baris duplikat terdeteksi.",
+                "affected": duplicate_rows,
+            }
+        )
+    if invalid_temperature_rows:
+        issues.append(
+            {
+                "type": "invalid_temperature",
+                "severity": "error",
+                "message": f"{invalid_temperature_rows} record memiliki temperature tidak numerik.",
+                "affected": invalid_temperature_rows,
+            }
+        )
+    if mixed_columns:
+        issues.append(
+            {
+                "type": "mixed_types",
+                "severity": "warn",
+                "message": "Ada kolom dengan tipe data campuran.",
+                "columns": mixed_columns[:10],
+                "affected": len(mixed_columns),
+            }
+        )
+    if empty_columns:
+        issues.append(
+            {
+                "type": "empty_columns",
+                "severity": "info",
+                "message": "Ada kolom yang seluruh nilainya kosong.",
+                "columns": empty_columns[:10],
+                "affected": len(empty_columns),
+            }
+        )
+
+    total_cells = max(1, record_count * max(1, column_count))
+    missing_ratio = missing_cells / total_cells
+    duplicate_ratio = duplicate_rows / max(1, record_count)
+    invalid_ratio = invalid_temperature_rows / max(1, record_count)
+    mixed_ratio = len(mixed_columns) / max(1, column_count)
+    score = 100
+    score -= min(35, missing_ratio * 70)
+    score -= min(25, duplicate_ratio * 60)
+    score -= min(25, invalid_ratio * 80)
+    score -= min(15, mixed_ratio * 45)
+    score = max(0, round(score))
+
+    return {
+        "score": score,
+        "dirty": any(issue["severity"] in {"warn", "error"} for issue in issues),
+        "issue_count": len(issues),
+        "missing_cells": missing_cells,
+        "duplicate_rows": duplicate_rows,
+        "invalid_temperature_rows": invalid_temperature_rows,
+        "mixed_columns": mixed_columns,
+        "empty_columns": empty_columns,
+        "issues": issues,
+    }
+
+
+def clean_data_payload(data: Any) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+    records = to_record_list(data)
+    profile = build_data_profile(records)
+    cleaned_records, cleaning = clean_records(records, profile)
+    if not cleaned_records:
+        raise ValueError("Data kosong setelah proses cleaning")
+    return cleaned_records, cleaning
+
+
+def clean_records(
+    records: list[dict[str, Any]],
+    profile: dict[str, Any],
+) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+    profile_map = {column["name"]: column for column in profile["columns"]}
+    numeric_columns = {
+        column["name"]
+        for column in profile["columns"]
+        if column["data_type"] == "numeric" and not is_identifier_column(column["name"])
+    }
+    boolean_columns = {
+        column["name"]
+        for column in profile["columns"]
+        if column["data_type"] == "boolean"
+    }
+    cleaning = {
+        "records_before": len(records),
+        "records_after": 0,
+        "trimmed_values": 0,
+        "blank_cells_to_null": 0,
+        "numeric_conversions": 0,
+        "boolean_conversions": 0,
+        "empty_rows_removed": 0,
+        "duplicates_removed": 0,
+    }
+    cleaned_records = []
+    seen = set()
+
+    for record in records:
+        cleaned = {}
+        for key, value in record.items():
+            cleaned[key] = clean_value(
+                key,
+                value,
+                numeric_columns,
+                boolean_columns,
+                profile_map,
+                cleaning,
+            )
+
+        if not has_record_value(cleaned):
+            cleaning["empty_rows_removed"] += 1
+            continue
+
+        canonical = canonical_record(cleaned)
+        if canonical in seen:
+            cleaning["duplicates_removed"] += 1
+            continue
+
+        seen.add(canonical)
+        cleaned_records.append(cleaned)
+
+    cleaning["records_after"] = len(cleaned_records)
+    return cleaned_records, cleaning
+
+
+def clean_value(
+    key: str,
+    value: Any,
+    numeric_columns: set[str],
+    boolean_columns: set[str],
+    profile_map: dict[str, dict[str, Any]],
+    cleaning: dict[str, int],
+) -> Any:
+    if isinstance(value, str):
+        stripped = value.strip()
+        if stripped != value:
+            cleaning["trimmed_values"] += 1
+        if stripped == "":
+            cleaning["blank_cells_to_null"] += 1
+            return None
+
+        if key in numeric_columns:
+            number = coerce_number(stripped)
+            if number is not None:
+                cleaning["numeric_conversions"] += int(not isinstance(value, (int, float)))
+                return number
+
+        if key in boolean_columns:
+            boolean = coerce_boolean(stripped)
+            if boolean is not None:
+                cleaning["boolean_conversions"] += 1
+                return boolean
+
+        return stripped
+
+    if isinstance(value, list):
+        return [
+            clean_value(key, item, numeric_columns, boolean_columns, profile_map, cleaning)
+            for item in value
+        ]
+
+    return value
+
+
+def build_cleaning_recommendations(
+    quality: dict[str, Any],
+    cleaning: dict[str, Any],
+) -> list[str]:
+    recommendations = []
+
+    if quality["missing_cells"]:
+        recommendations.append("Ubah cell kosong menjadi null agar query dan chart konsisten.")
+    if quality["duplicate_rows"]:
+        recommendations.append("Hapus baris duplikat sebelum data disimpan.")
+    if quality["invalid_temperature_rows"]:
+        recommendations.append("Perbaiki kolom temperature agar bernilai angka.")
+    if quality["mixed_columns"]:
+        recommendations.append("Standarkan tipe data pada kolom campuran.")
+    if cleaning["numeric_conversions"]:
+        recommendations.append("Konversi angka berbentuk teks menjadi numeric value.")
+
+    return recommendations or ["Data siap diproses tanpa cleaning tambahan."]
+
+
+def build_chart_payload(
+    records: list[dict[str, Any]],
+    processed_records: list[dict[str, Any]],
+) -> dict[str, Any]:
+    profile = build_data_profile(records)
+    return {
+        "status_distribution": counter_chart(
+            Counter(
+                str(record.get("status", "unknown"))
+                for record in processed_records
+                if isinstance(record, dict)
+            )
+        ),
+        "category_distribution": counter_chart(
+            Counter(
+                str(record.get("category", "generic"))
+                for record in processed_records
+                if isinstance(record, dict)
+            )
+        ),
+        "missing_by_column": missing_chart(profile),
+        "numeric_histograms": numeric_histograms(profile, records),
+        "top_values": categorical_top_values(profile),
+        "correlation": correlation_matrix(profile, records),
+    }
+
+
+def counter_chart(counter: Counter) -> dict[str, list[Any]]:
+    items = counter.most_common()
+    return {
+        "labels": [label for label, _ in items],
+        "data": [count for _, count in items],
+    }
+
+
+def missing_chart(profile: dict[str, Any]) -> dict[str, list[Any]]:
+    items = sorted(
+        (
+            (column["name"], column["missing_count"])
+            for column in profile["columns"]
+            if column["missing_count"] > 0
+        ),
+        key=lambda item: item[1],
+        reverse=True,
+    )[:12]
+
+    return {
+        "labels": [name for name, _ in items],
+        "data": [count for _, count in items],
+    }
+
+
+def numeric_histograms(
+    profile: dict[str, Any],
+    records: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    histograms = []
+
+    for column in profile["columns"]:
+        if column["data_type"] != "numeric":
+            continue
+
+        values = [
+            number
+            for record in records
+            if (number := coerce_number(record.get(column["name"]))) is not None
+        ]
+        if values:
+            histograms.append(build_histogram(column["name"], values))
+        if len(histograms) >= 3:
+            break
+
+    return histograms
+
+
+def build_histogram(column: str, values: list[float]) -> dict[str, Any]:
+    min_value = min(values)
+    max_value = max(values)
+
+    if min_value == max_value:
+        return {"column": column, "labels": [format_number(min_value)], "data": [len(values)]}
+
+    bucket_count = min(MAX_CHART_BUCKETS, max(1, len(values)))
+    step = (max_value - min_value) / bucket_count
+    buckets = [0 for _ in range(bucket_count)]
+
+    for value in values:
+        index = min(bucket_count - 1, int((value - min_value) / step))
+        buckets[index] += 1
+
+    labels = []
+    for index in range(bucket_count):
+        start = min_value + (step * index)
+        end = start + step
+        labels.append(f"{format_number(start)}-{format_number(end)}")
+
+    return {"column": column, "labels": labels, "data": buckets}
+
+
+def categorical_top_values(profile: dict[str, Any]) -> list[dict[str, Any]]:
+    charts = []
+    for column in profile["columns"]:
+        if column["data_type"] not in {"text", "boolean", "datetime"}:
+            continue
+        if not column["top_values"]:
+            continue
+
+        charts.append(
+            {
+                "column": column["name"],
+                "labels": [item["value"] for item in column["top_values"]],
+                "data": [item["count"] for item in column["top_values"]],
+            }
+        )
+        if len(charts) >= 3:
+            break
+
+    return charts
+
+
+def correlation_matrix(
+    profile: dict[str, Any],
+    records: list[dict[str, Any]],
+) -> dict[str, Any]:
+    numeric_columns = [
+        column["name"]
+        for column in profile["columns"]
+        if column["data_type"] == "numeric"
+    ][:6]
+    matrix = []
+
+    for left in numeric_columns:
+        row = []
+        for right in numeric_columns:
+            row.append(pearson_for_columns(records, left, right))
+        matrix.append(row)
+
+    return {"labels": numeric_columns, "matrix": matrix}
+
+
+def pearson_for_columns(
+    records: list[dict[str, Any]],
+    left: str,
+    right: str,
+) -> float | None:
+    pairs = []
+    for record in records:
+        left_value = coerce_number(record.get(left))
+        right_value = coerce_number(record.get(right))
+        if left_value is not None and right_value is not None:
+            pairs.append((left_value, right_value))
+
+    if len(pairs) < 2:
+        return None
+
+    xs = [pair[0] for pair in pairs]
+    ys = [pair[1] for pair in pairs]
+    mean_x = sum(xs) / len(xs)
+    mean_y = sum(ys) / len(ys)
+    numerator = sum((x - mean_x) * (y - mean_y) for x, y in pairs)
+    denominator_x = math.sqrt(sum((x - mean_x) ** 2 for x in xs))
+    denominator_y = math.sqrt(sum((y - mean_y) ** 2 for y in ys))
+    if denominator_x == 0 or denominator_y == 0:
+        return 1 if left == right else None
+    return round(numerator / (denominator_x * denominator_y), 4)
+
+
+def count_duplicate_records(records: list[dict[str, Any]]) -> int:
+    seen = set()
+    duplicates = 0
+
+    for record in records:
+        canonical = canonical_record(record)
+        if canonical in seen:
+            duplicates += 1
+        else:
+            seen.add(canonical)
+
+    return duplicates
+
+
+def count_invalid_temperature(records: list[dict[str, Any]]) -> int:
+    invalid = 0
+    for record in records:
+        if not isinstance(record, dict):
+            continue
+        for key in ("temperature", "temp", "suhu"):
+            value = record.get(key)
+            if has_value(value) and coerce_number(value) is None:
+                invalid += 1
+                break
+    return invalid
+
+
+def detect_value_type(value: Any) -> str:
+    if isinstance(value, bool):
+        return "boolean"
+    if isinstance(value, (int, float)) and not isinstance(value, bool):
+        return "numeric" if math.isfinite(float(value)) else "text"
+    if isinstance(value, str):
+        stripped = value.strip()
+        if coerce_boolean(stripped) is not None:
+            return "boolean"
+        if coerce_number(stripped) is not None:
+            return "numeric"
+        if coerce_datetime(stripped):
+            return "datetime"
+        return "text"
+    if isinstance(value, datetime):
+        return "datetime"
+    if isinstance(value, (dict, list)):
+        return "object"
+    return "text"
+
+
+def coerce_number(value: Any) -> float | int | None:
+    if value is None or isinstance(value, bool):
+        return None
+    if isinstance(value, (int, float)):
+        number = float(value)
+        if not math.isfinite(number):
+            return None
+        return int(number) if number.is_integer() else number
+    if not isinstance(value, str):
+        return None
+
+    text = value.strip()
+    if not text:
+        return None
+    text = text.replace(" ", "")
+    if re.fullmatch(r"-?\d+,\d+", text):
+        text = text.replace(",", ".")
+    if not re.fullmatch(r"-?\d+(\.\d+)?", text):
+        return None
+
+    try:
+        number = float(text)
+    except ValueError:
+        return None
+    if not math.isfinite(number):
+        return None
+    return int(number) if number.is_integer() else number
+
+
+def coerce_boolean(value: Any) -> bool | None:
+    if isinstance(value, bool):
+        return value
+    if not isinstance(value, str):
+        return None
+
+    lowered = value.strip().lower()
+    if lowered in {"true", "yes", "y", "ya"}:
+        return True
+    if lowered in {"false", "no", "n", "tidak"}:
+        return False
+    return None
+
+
+def coerce_datetime(value: str) -> bool:
+    try:
+        datetime.fromisoformat(value.replace("Z", "+00:00"))
+        return True
+    except ValueError:
+        return False
+
+
+def is_identifier_column(column: str) -> bool:
+    lowered = column.lower()
+    return any(token in lowered for token in ("id", "code", "kode", "phone", "tel", "zip"))
+
+
+def canonical_record(value: Any) -> str:
+    try:
+        return json.dumps(value, sort_keys=True, ensure_ascii=False, default=str)
+    except TypeError:
+        return str(value)
+
+
+def canonical_preview(value: Any) -> str:
+    text = safe_preview(value)
+    return text if len(text) <= 80 else f"{text[:77]}..."
+
+
+def safe_preview(value: Any) -> str:
+    if value is None:
+        return "null"
+    if isinstance(value, (dict, list)):
+        return canonical_record(value)
+    return str(value)
+
+
+def format_number(value: float | int) -> str:
+    return f"{value:g}"
+
+
+def parse_bool_param(value: str | None) -> bool:
+    return str(value or "").strip().lower() in {"1", "true", "yes", "y", "clean"}
+
+
+def parse_analytics_limit(raw_limit: str | None) -> int:
+    if raw_limit is None or raw_limit == "":
+        return DEFAULT_LIMIT
+
+    try:
+        limit = int(raw_limit)
+    except (TypeError, ValueError):
+        raise ValueError("Parameter limit harus berupa angka")
+
+    if limit < 1:
+        raise ValueError("Parameter limit minimal 1")
+    if limit > MAX_ANALYTICS_RECORDS:
+        raise ValueError(f"Parameter limit maksimal {MAX_ANALYTICS_RECORDS}")
+    return limit
 
 
 def process_data(data: Any, source_file: str) -> list[dict[str, Any]]:

@@ -66,6 +66,7 @@ Azure Functions API
 - Dashboard monitoring data berbasis HTML, CSS, dan JavaScript.
 - Login dan register user sebelum mengakses dashboard.
 - Upload file JSON, CSV, XLSX, dan XLS dari dashboard.
+- Data science processing untuk profiling data, quality check, cleaning otomatis, statistik kolom, dan chart eksplorasi.
 - Blob trigger untuk pemrosesan otomatis file JSON, CSV, XLSX, dan XLS.
 - HTTP API untuk data, statistik, upload, dan health check.
 - Deteksi kategori data:
@@ -88,7 +89,10 @@ Frontend tidak memanggil Azure Functions secara langsung. Dashboard memanggil en
 | GET | `/api/stats` | Mengambil statistik total record, processed, anomaly, dan error |
 | GET | `/api/data?limit=50` | Mengambil data terbaru |
 | GET | `/api/data?status=processed&limit=50` | Mengambil data berdasarkan status |
+| GET | `/api/analytics?limit=200` | Mengambil profil, kualitas, dan chart dari data tersimpan |
+| POST | `/api/analyze` | Menganalisis file upload tanpa menyimpan data |
 | POST | `/api/upload` | Upload JSON, CSV, XLSX, atau XLS langsung untuk diproses |
+| POST | `/api/upload?clean=true` | Membersihkan data otomatis sebelum diproses dan disimpan |
 
 Endpoint `stats`, `data`, dan `upload` di Azure tetap menggunakan `auth_level=FUNCTION`, tetapi function key tidak disimpan di frontend.
 
@@ -109,6 +113,22 @@ Batas upload saat ini adalah 5 MB dan 1.000 baris data per file. Kolom yang disa
 | `level` + `message` | Dipakai untuk kategori `log` dan deteksi error |
 
 Contoh CSV untuk uji UI tersedia di `samples/sample-telemetry.csv`.
+
+## Data Science Processing
+
+Dashboard menyediakan panel **Data Science Processing** untuk melihat kualitas data sebelum dan sesudah upload. Fitur yang tersedia:
+
+- Profiling kolom: tipe data, jumlah nilai kosong, unique value, dan top values.
+- Quality score untuk mendeteksi missing value, duplikat, tipe campuran, dan nilai suhu tidak valid.
+- Cleaning otomatis: trim spasi, mengubah cell kosong menjadi null, konversi angka berbentuk teks, dan hapus duplikat.
+- Chart eksplorasi: distribusi status, missing value per kolom, histogram numerik, distribusi kategori, dan korelasi numerik dari backend.
+
+Alur upload yang direkomendasikan:
+
+1. Pilih file JSON, CSV, XLSX, atau XLS.
+2. Klik **Analisis Data**.
+3. Jika quality issue muncul, pilih **Bersihkan & Proses**.
+4. Jika data sudah siap atau ingin menyimpan apa adanya, pilih **Proses Apa Adanya**.
 
 ## Tech Stack
 
@@ -202,7 +222,7 @@ File utama:
 
 - `index.html`: struktur halaman dashboard.
 - `style.css`: styling dashboard.
-- `script.js`: konfigurasi API, fetch data, upload file data, chart, dan demo mode.
+- `script.js`: konfigurasi API, auth, fetch data, upload file, data science processing, dan chart.
 - `env.example.js`: contoh konfigurasi frontend agar memanggil proxy `/api`.
 
 Konfigurasi API frontend dibaca dari variable global browser:
@@ -211,7 +231,7 @@ Konfigurasi API frontend dibaca dari variable global browser:
 window.DATA_API_BASE = "/api";
 ```
 
-Untuk local/demo deployment, salin `src/dashboard/env.example.js` menjadi `src/dashboard/env.js` jika ingin override path proxy. File `env.js` sudah masuk `.gitignore`. Nilai `DATA_API_BASE` harus path same-origin seperti `/api`; URL eksternal akan diabaikan oleh dashboard agar token tidak terkirim ke domain lain.
+Untuk local deployment, salin `src/dashboard/env.example.js` menjadi `src/dashboard/env.js` jika ingin override path proxy. File `env.js` sudah masuk `.gitignore`. Nilai `DATA_API_BASE` harus path same-origin seperti `/api`; URL eksternal akan diabaikan oleh dashboard agar token tidak terkirim ke domain lain.
 
 Untuk deployment publik, simpan `AZURE_FUNCTION_URL` dan `AZURE_FUNCTION_KEY` sebagai environment variable Cloudflare Pages Function, bukan di frontend.
 
