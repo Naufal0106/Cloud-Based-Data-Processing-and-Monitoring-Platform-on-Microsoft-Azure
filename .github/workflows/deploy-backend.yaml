@@ -53,10 +53,18 @@ jobs:
 
       - name: 'Verify Azure Functions indexing'
         run: |
-          functions="$(az functionapp function list \
-            --name 'func-backend-monitoring-k11' \
-            --resource-group 'RG-Kelompok11' \
-            --query '[].name' \
-            -o tsv)"
-          echo "$functions"
-          test -n "$functions"
+          for attempt in 1 2 3 4 5 6; do
+            functions="$(az functionapp function list \
+              --name 'func-backend-monitoring-k11' \
+              --resource-group 'RG-Kelompok11' \
+              --query '[].name' \
+              -o tsv)"
+            if [ -n "$functions" ]; then
+              echo "$functions"
+              exit 0
+            fi
+            echo "Function indexing not ready yet, attempt $attempt/6"
+            sleep 30
+          done
+          echo "Azure Functions indexing did not expose any functions in time."
+          exit 1
