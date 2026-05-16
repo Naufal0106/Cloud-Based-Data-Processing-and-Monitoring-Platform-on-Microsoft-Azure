@@ -65,6 +65,8 @@ Dokumen ini mendata resource yang digunakan pada platform data processing dan mo
 | GET | `/api/stats` | Statistik total, processed, anomaly, dan error |
 | GET | `/api/data` | Data terbaru |
 | POST | `/api/upload` | Upload JSON, CSV, XLSX, atau XLS langsung |
+| GET | `/api/admin/users` | Admin-only daftar user |
+| PATCH/POST | `/api/admin/users/{user_id}/role` | Admin-only update role |
 
 ## Catatan Operasional
 
@@ -73,6 +75,7 @@ Dokumen ini mendata resource yang digunakan pada platform data processing dan mo
 - Azure Storage static website masih dapat digunakan sebagai backup atau demo.
 - Function key harus dikonfigurasi sebagai environment variable Cloudflare Pages Function, bukan melalui `env.js`.
 - File `env.js` tidak boleh dicommit karena dapat berisi secret.
+- Register publik hanya membuat role `user`; role `admin` dibuat manual/internal dan dikelola dari panel admin.
 
 ## Kesimpulan
 

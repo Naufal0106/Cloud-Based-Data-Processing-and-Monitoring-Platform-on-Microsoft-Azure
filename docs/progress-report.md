@@ -25,8 +25,9 @@ Proyek telah berkembang dari perencanaan infrastruktur Azure menjadi platform hy
 ### Backend
 
 - Azure Functions menggunakan Python 3.11.
-- HTTP endpoint untuk `hello`, `register`, `login`, `me`, `stats`, `data`, dan `upload`.
+- HTTP endpoint untuk `hello`, `register`, `login`, `me`, `stats`, `data`, `upload`, dan admin user management.
 - Login/register user dengan password hash PBKDF2 dan token sesi.
+- Role `user` dan `admin` sudah dipisahkan; register publik selalu membuat role `user`.
 - Database user dipisahkan ke Cosmos DB container `users`.
 - Blob trigger untuk container `raw-data`.
 - Validasi parameter `limit` dan `status`.
@@ -39,6 +40,7 @@ Proyek telah berkembang dari perencanaan infrastruktur Azure menjadi platform hy
 - Dashboard statis di `src/dashboard`.
 - UI dashboard sudah diperbarui agar lebih rapi dan responsive.
 - Layar login/register ditambahkan sebelum dashboard.
+- Panel **Admin Users** tampil hanya untuk role `admin`.
 - Mode demo tersedia jika backend proxy belum dikonfigurasi.
 - Upload JSON, CSV, XLSX, dan XLS divalidasi di sisi browser lalu diproses di backend.
 - Konfigurasi frontend menggunakan `env.js` lokal atau environment Cloudflare Pages.
@@ -48,6 +50,7 @@ Proyek telah berkembang dari perencanaan infrastruktur Azure menjadi platform hy
 - Terraform digunakan untuk provisioning Azure.
 - GitHub Actions digunakan untuk deploy backend ke Azure Functions.
 - `.gitignore` menjaga file secret dan local config agar tidak masuk repository.
+- Script `scripts/generate-admin-user.ps1` dibuat untuk menyiapkan admin pertama secara manual/internal.
 
 ### Dokumentasi
 

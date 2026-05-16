@@ -71,6 +71,7 @@ node_modules/
 .pages/
 dist/
 build/
+artifacts/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*

@@ -93,12 +93,7 @@ Domain production proyek:
 kelompok11cc.my.id
 ```
 
-Nameserver yang dipakai:
-
-```text
-***REMOVED_NAMESERVER***
-***REMOVED_NAMESERVER***
-```
+Nameserver domain diarahkan ke Cloudflare. Detail nameserver sengaja tidak dicantumkan di repository publik.
 
 Langkah di Cloudflare Pages:
 
@@ -193,6 +188,15 @@ http://127.0.0.1:4173/
 
 Jika backend proxy belum aktif, gunakan tombol **Masuk Demo** untuk mengecek tampilan dashboard.
 
+Preview role lokal tanpa backend:
+
+```text
+http://127.0.0.1:4173/?preview=user
+http://127.0.0.1:4173/?preview=admin
+```
+
+Mode preview ini hanya aktif pada `localhost` atau `127.0.0.1`, sehingga tidak membuka akses admin di domain production.
+
 ### Test login/register dan database
 
 Setelah Cloudflare Pages Function aktif dan SSL custom domain sudah valid, jalankan:
@@ -235,6 +239,20 @@ Jika muncul error SSL/TLS, pastikan custom domain Cloudflare Pages sudah aktif d
 | GET | `/api/stats` | Statistik data |
 | GET | `/api/data?limit=50` | Data terbaru |
 | POST | `/api/upload` | Upload JSON, CSV, XLSX, atau XLS |
+| GET | `/api/admin/users` | Admin-only daftar user |
+| PATCH/POST | `/api/admin/users/{user_id}/role` | Admin-only update role user |
+
+## Admin Pertama
+
+Domain admin tidak wajib dipisah. Dashboard tetap memakai `kelompok11cc.my.id`; akses admin dibedakan dari token login yang memiliki role `admin`.
+
+Register publik hanya membuat role `user`. Untuk membuat admin pertama, generate dokumen user admin:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/generate-admin-user.ps1 -Name "Admin Kelompok 11" -Email "admin@kelompok11cc.my.id"
+```
+
+Masukkan JSON yang tampil ke Cosmos DB container `users` dengan partition key email. Setelah admin pertama login, panel **Admin Users** akan tampil di dashboard dan dapat dipakai untuk mengubah role user lain.
 
 ## Troubleshooting
 

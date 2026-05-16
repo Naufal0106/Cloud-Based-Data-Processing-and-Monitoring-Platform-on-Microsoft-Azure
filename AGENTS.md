@@ -46,6 +46,10 @@ Endpoint utama:
 - `GET /api/stats`
 - `GET /api/data`
 - `POST /api/upload`
+- `GET /api/admin/users`
+- `PATCH/POST /api/admin/users/{user_id}/role`
+
+Public register must always create role `user`. Do not add public admin registration. First admin is created manually/internal using `scripts/generate-admin-user.ps1`, then admin users can manage roles from the dashboard.
 
 Upload menerima format:
 

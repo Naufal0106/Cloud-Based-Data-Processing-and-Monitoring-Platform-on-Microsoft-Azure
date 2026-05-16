@@ -28,6 +28,9 @@ MAX_LIMIT = 200
 MAX_UPLOAD_BYTES = 5 * 1024 * 1024
 MAX_UPLOAD_RECORDS = 1000
 SUPPORTED_UPLOAD_EXTENSIONS = {".json", ".csv", ".xlsx", ".xls"}
+USER_ROLES = {"admin", "user"}
+ADMIN_ROLE = "admin"
+DEFAULT_USER_ROLE = "user"
 AUTH_TOKEN_TTL_SECONDS = 60 * 60 * 8
 PASSWORD_MIN_LENGTH = 8
 PBKDF2_ITERATIONS = 160_000
@@ -253,7 +256,7 @@ def register_user(req: func.HttpRequest) -> func.HttpResponse:
             "doc_type": "user",
             "name": name,
             "email": email,
-            "role": "user",
+            "role": DEFAULT_USER_ROLE,
             "password_hash": hash_password(password),
             "created_at": now,
             "updated_at": now,
@@ -328,6 +331,83 @@ def get_current_user(req: func.HttpRequest) -> func.HttpResponse:
             },
         }
     )
+
+
+@app.route(route="admin/users", methods=["GET"], auth_level=func.AuthLevel.FUNCTION)
+def list_admin_users(req: func.HttpRequest) -> func.HttpResponse:
+    _, auth_error = require_role(req, {ADMIN_ROLE})
+    if auth_error:
+        return auth_error
+
+    try:
+        container = get_users_container()
+        users = list(
+            container.query_items(
+                query=(
+                    "SELECT c.id, c.name, c.email, c.role, c.created_at, "
+                    "c.updated_at, c.last_login_at FROM c "
+                    "WHERE c.doc_type = 'user'"
+                ),
+                enable_cross_partition_query=True,
+            )
+        )
+        users.sort(key=lambda item: item.get("created_at", ""), reverse=True)
+
+        return json_response(
+            {
+                "success": True,
+                "count": len(users),
+                "users": [public_user(item, include_meta=True) for item in users],
+            }
+        )
+    except Exception:
+        logging.exception("[GET /admin/users] Error")
+        return error_response("Gagal mengambil daftar user")
+
+
+@app.route(
+    route="admin/users/{user_id}/role",
+    methods=["PATCH", "POST"],
+    auth_level=func.AuthLevel.FUNCTION,
+)
+def update_admin_user_role(req: func.HttpRequest) -> func.HttpResponse:
+    claims, auth_error = require_role(req, {ADMIN_ROLE})
+    if auth_error:
+        return auth_error
+
+    user_id = str(req.route_params.get("user_id", "")).strip()
+    if not user_id:
+        return error_response("User id wajib diisi", 400)
+
+    try:
+        payload = req.get_json()
+        role = validate_role(payload.get("role"))
+    except (AttributeError, ValueError) as exc:
+        return error_response(str(exc), 400)
+
+    try:
+        container = get_users_container()
+        user = find_user_by_id(container, user_id)
+        if not user:
+            return error_response("User tidak ditemukan", 404)
+
+        if user["id"] == claims["sub"] and role != ADMIN_ROLE:
+            return error_response("Admin tidak bisa menurunkan role akunnya sendiri", 400)
+
+        user["role"] = role
+        user["updated_at"] = datetime.now(timezone.utc).isoformat()
+        container.upsert_item(user)
+
+        return json_response(
+            {
+                "success": True,
+                "message": "Role user berhasil diperbarui",
+                "user": public_user(user, include_meta=True),
+            }
+        )
+    except Exception:
+        logging.exception("[PATCH /admin/users/{user_id}/role] Error")
+        return error_response("Gagal memperbarui role user")
 
 
 @app.route(route="hello", methods=["GET"], auth_level=func.AuthLevel.ANONYMOUS)
@@ -772,9 +852,38 @@ def find_user_by_email(container, email: str) -> dict[str, Any] | None:
     return users[0] if users else None
 
 
+def find_user_by_id(container, user_id: str) -> dict[str, Any] | None:
+    users = list(
+        container.query_items(
+            query=(
+                "SELECT TOP 1 * FROM c "
+                "WHERE c.id = @id AND c.doc_type = 'user'"
+            ),
+            parameters=[{"name": "@id", "value": user_id}],
+            enable_cross_partition_query=True,
+        )
+    )
+    return users[0] if users else None
+
+
 def require_auth(req: func.HttpRequest) -> func.HttpResponse | None:
     _, auth_error = get_auth_claims(req)
     return auth_error
+
+
+def require_role(
+    req: func.HttpRequest,
+    allowed_roles: set[str],
+) -> tuple[dict[str, Any] | None, func.HttpResponse | None]:
+    claims, auth_error = get_auth_claims(req)
+    if auth_error:
+        return None, auth_error
+
+    role = str(claims.get("role", DEFAULT_USER_ROLE)).lower()
+    if role not in allowed_roles:
+        return None, error_response("Akses admin diperlukan", 403)
+
+    return claims, None
 
 
 def get_auth_claims(
@@ -891,13 +1000,20 @@ def verify_password(password: str, stored_hash: str) -> bool:
         return False
 
 
-def public_user(user: dict[str, Any]) -> dict[str, Any]:
-    return {
+def public_user(user: dict[str, Any], include_meta: bool = False) -> dict[str, Any]:
+    payload = {
         "id": user["id"],
         "name": user["name"],
         "email": user["email"],
-        "role": user.get("role", "user"),
+        "role": user.get("role", DEFAULT_USER_ROLE),
     }
+
+    if include_meta:
+        for key in ("created_at", "updated_at", "last_login_at"):
+            if key in user:
+                payload[key] = user[key]
+
+    return payload
 
 
 def validate_name(raw_name: Any) -> str:
@@ -921,6 +1037,14 @@ def validate_password(raw_password: Any) -> str:
     if len(password) < PASSWORD_MIN_LENGTH:
         raise ValueError(f"Password minimal {PASSWORD_MIN_LENGTH} karakter")
     return password
+
+
+def validate_role(raw_role: Any) -> str:
+    role = str(raw_role or "").strip().lower()
+    if role not in USER_ROLES:
+        allowed = ", ".join(sorted(USER_ROLES))
+        raise ValueError(f"Role tidak valid. Gunakan salah satu: {allowed}")
+    return role
 
 
 def b64url_encode(value: bytes) -> str:

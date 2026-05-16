@@ -59,16 +59,19 @@ Cosmos DB dipilih karena data monitoring dan data user berbentuk JSON dan skeman
 2. User melakukan login atau register melalui proxy `/api`.
 3. Backend mengembalikan token sesi jika kredensial valid.
 4. Dashboard mengirim token melalui header `Authorization` saat membaca data atau upload.
-5. User dapat upload JSON, CSV, XLSX, atau XLS melalui endpoint `POST /api/upload`.
-6. File dengan format yang sama juga dapat masuk melalui Blob Storage container `raw-data`.
-7. Azure Functions melakukan parsing, enrichment, status classification, dan penyimpanan data.
-8. Hasil proses disimpan di Azure Cosmos DB.
-9. Dashboard membaca statistik dan record terbaru melalui endpoint `GET /api/stats` dan `GET /api/data`.
+5. User biasa dapat melihat dashboard dan upload JSON, CSV, XLSX, atau XLS melalui endpoint `POST /api/upload`.
+6. Admin dapat melihat daftar user dan mengubah role melalui endpoint `/api/admin/*`.
+7. File dengan format yang sama juga dapat masuk melalui Blob Storage container `raw-data`.
+8. Azure Functions melakukan parsing, enrichment, status classification, dan penyimpanan data.
+9. Hasil proses disimpan di Azure Cosmos DB.
+10. Dashboard membaca statistik dan record terbaru melalui endpoint `GET /api/stats` dan `GET /api/data`.
 
 ## Strategi Keamanan
 
 - Function key digunakan di sisi server proxy untuk endpoint Azure `stats`, `data`, dan `upload`.
 - User dashboard harus login sebelum mengakses data dan upload.
+- Register publik hanya membuat role `user`; role `admin` dibuat secara internal/manual.
+- Panel admin memakai domain yang sama dan dilindungi role-based access control, sehingga domain admin terpisah tidak wajib.
 - Password disimpan dengan hash PBKDF2.
 - Token login ditandatangani dengan `AUTH_TOKEN_SECRET`.
 - Secret Cosmos DB disimpan di Azure Key Vault.

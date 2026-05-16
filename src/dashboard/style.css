@@ -326,32 +326,6 @@ h1 {
   line-height: 1.65;
 }
 
-.runtime-panel {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  gap: 0.4rem 0.75rem;
-  padding: 1rem;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  box-shadow: var(--shadow);
-}
-
-.runtime-label {
-  color: var(--muted);
-  font-size: 0.76rem;
-  font-weight: 700;
-}
-
-.runtime-value {
-  min-width: 0;
-  overflow: hidden;
-  color: var(--text);
-  font-size: 0.76rem;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
 .stats-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -628,6 +602,14 @@ input[type="file"] {
   border-radius: var(--radius);
 }
 
+.admin-panel {
+  border-color: rgba(15, 118, 110, 0.28);
+}
+
+.admin-table-wrap table {
+  min-width: 860px;
+}
+
 table {
   width: 100%;
   min-width: 980px;
@@ -692,6 +674,16 @@ tbody tr:hover td {
 .badge-error {
   background: rgba(220, 38, 38, 0.12);
   color: #991b1b;
+}
+
+.badge-admin {
+  background: rgba(37, 99, 235, 0.12);
+  color: #1d4ed8;
+}
+
+.badge-user {
+  background: rgba(15, 118, 110, 0.12);
+  color: #0f766e;
 }
 
 .badge-generic,
@@ -823,15 +815,6 @@ tbody tr:hover td {
   .toolbar .btn,
   .upload-actions .btn {
     width: 100%;
-  }
-
-  .runtime-panel {
-    grid-template-columns: 1fr;
-  }
-
-  .runtime-value {
-    white-space: normal;
-    overflow-wrap: anywhere;
   }
 
   h1 {

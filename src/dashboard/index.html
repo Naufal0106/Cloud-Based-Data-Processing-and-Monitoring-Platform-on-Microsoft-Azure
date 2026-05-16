@@ -101,19 +101,11 @@
         <div>
           <p class="eyebrow">Cloud monitoring dashboard</p>
           <h1 id="page-title">Realtime Data Processing</h1>
-          <p class="page-subtitle">
-            Frontend berjalan di Cloudflare Pages, backend dan data pipeline
-            berjalan di Microsoft Azure.
-          </p>
-        </div>
-        <div class="runtime-panel">
-          <span class="runtime-label">Backend</span>
-          <span class="runtime-value mono" id="backend-mode-label">Proxy / demo mode</span>
-          <span class="runtime-label">Security</span>
-          <span class="runtime-value mono">API key hidden</span>
-          <span class="runtime-label">Last sync</span>
-          <span class="runtime-value mono" id="last-sync">Belum sinkron</span>
-        </div>
+        <p class="page-subtitle">
+          Frontend berjalan di Cloudflare Pages, backend dan data pipeline
+          berjalan di Microsoft Azure.
+        </p>
+      </div>
       </section>
 
       <section class="stats-grid" aria-label="Ringkasan data">
@@ -137,6 +129,38 @@
           <strong class="stat-value" id="s-error">-</strong>
           <span class="stat-sub">Log atau input bermasalah</span>
         </article>
+      </section>
+
+      <section class="panel admin-panel" id="admin-panel" hidden>
+        <div class="panel-header panel-header-wide">
+          <div>
+            <h2>Admin Users</h2>
+            <p>Kelola role user dashboard. Register publik tetap membuat role user.</p>
+          </div>
+          <button class="btn btn-secondary btn-sm" id="btnAdminRefresh" type="button">
+            Reload Users
+          </button>
+        </div>
+
+        <div class="table-wrap admin-table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Nama</th>
+                <th>Email</th>
+                <th>Role</th>
+                <th>Terdaftar</th>
+                <th>Login Terakhir</th>
+                <th>Aksi</th>
+              </tr>
+            </thead>
+            <tbody id="admin-users-tbody">
+              <tr>
+                <td colspan="6" class="empty">Admin panel belum dimuat.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
       </section>
 
       <section class="content-grid">

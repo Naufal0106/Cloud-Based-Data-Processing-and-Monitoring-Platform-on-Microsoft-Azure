@@ -4,6 +4,7 @@ const SUPPORTED_UPLOAD_EXTENSIONS = [".json", ".csv", ".xlsx", ".xls"];
 const AUTO_REFRESH_MS = 30000;
 const AUTH_TOKEN_KEY = "k11_auth_token";
 const AUTH_USER_KEY = "k11_auth_user";
+const LOCAL_PREVIEW_HOSTS = new Set(["localhost", "127.0.0.1", "::1"]);
 
 const CONFIG = {
   API_BASE: (window.DATA_API_BASE || DEFAULT_API_BASE).replace(/\/+$/, ""),
@@ -31,8 +32,14 @@ function init() {
   bindEvents();
   startClock();
   initChart();
-  updateBackendLabel();
   updateUploadButton();
+
+  const previewRole = getLocalPreviewRole();
+  if (previewRole) {
+    startPreviewSession(previewRole);
+    return;
+  }
+
   restoreSession();
 
   if (state.authToken) {
@@ -59,14 +66,15 @@ function cacheElements() {
     tabRegister: document.getElementById("tab-register"),
     connectionPill: document.getElementById("connection-pill"),
     connectionLabel: document.getElementById("connection-label"),
-    backendModeLabel: document.getElementById("backend-mode-label"),
-    lastSync: document.getElementById("last-sync"),
     btnRefresh: document.getElementById("btnRefresh"),
     btnDataRefresh: document.getElementById("btnDataRefresh"),
     btnClearLog: document.getElementById("btnClearLog"),
     btnUpload: document.getElementById("btnUpload"),
     btnLogout: document.getElementById("btnLogout"),
+    btnAdminRefresh: document.getElementById("btnAdminRefresh"),
     currentUserLabel: document.getElementById("current-user-label"),
+    adminPanel: document.getElementById("admin-panel"),
+    adminUsersBody: document.getElementById("admin-users-tbody"),
     fileInput: document.getElementById("fileInput"),
     dropzone: document.getElementById("dropzone"),
     fileInfo: document.getElementById("file-info"),
@@ -95,6 +103,8 @@ function bindEvents() {
   el.btnDataRefresh.addEventListener("click", fetchData);
   el.btnClearLog.addEventListener("click", clearLog);
   el.btnUpload.addEventListener("click", uploadFile);
+  el.btnAdminRefresh.addEventListener("click", fetchAdminUsers);
+  el.adminUsersBody.addEventListener("click", handleAdminUserAction);
   el.dropzone.addEventListener("click", () => el.fileInput.click());
   el.fileInput.addEventListener("change", (event) => {
     handleFile(event.target.files[0]);
@@ -170,6 +180,21 @@ function startDemoSession() {
   showApp();
 }
 
+function startPreviewSession(role) {
+  const isAdminPreview = role === "admin";
+  state.authToken = `preview-${role}`;
+  state.currentUser = {
+    id: isAdminPreview ? "preview-admin" : "preview-user",
+    name: isAdminPreview ? "Preview Admin" : "Preview User",
+    email: isAdminPreview
+      ? "admin@kelompok11cc.my.id"
+      : "user@kelompok11cc.my.id",
+    role,
+  };
+  state.isDemoSession = true;
+  showApp();
+}
+
 function saveSession(token, user, isDemoSession) {
   state.authToken = token;
   state.currentUser = user;
@@ -211,9 +236,10 @@ function showAuth() {
 function showApp() {
   el.authScreen.hidden = true;
   el.appView.hidden = false;
-  el.currentUserLabel.textContent = state.currentUser?.name || "User";
+  updateRoleUi();
   addLog("info", `Login sebagai ${state.currentUser?.email || "user"}.`);
   fetchAll();
+  fetchAdminUsers();
 
   if (!state.refreshTimer) {
     state.refreshTimer = setInterval(fetchAll, CONFIG.AUTO_REFRESH_MS);
@@ -224,7 +250,28 @@ function logout() {
   clearSession();
   resetSelectedFile();
   setConnection("", "Checking");
+  updateRoleUi();
   showAuth();
+}
+
+function updateRoleUi() {
+  const name = state.currentUser?.name || "User";
+  const role = state.currentUser?.role || "user";
+  el.currentUserLabel.textContent = state.currentUser
+    ? `${name} · ${role}`
+    : "";
+  el.adminPanel.hidden = !isAdmin();
+}
+
+function isAdmin() {
+  return state.currentUser?.role === "admin";
+}
+
+function getLocalPreviewRole() {
+  if (!LOCAL_PREVIEW_HOSTS.has(window.location.hostname)) return "";
+
+  const role = new URLSearchParams(window.location.search).get("preview");
+  return role === "admin" || role === "user" ? role : "";
 }
 
 function setAuthLoading(isLoading) {
@@ -248,12 +295,6 @@ function startClock() {
   };
   tick();
   setInterval(tick, 1000);
-}
-
-function updateBackendLabel() {
-  el.backendModeLabel.textContent = CONFIG.API_BASE.startsWith("/")
-    ? "Same-origin proxy"
-    : "External proxy";
 }
 
 function setBusy(isBusy) {
@@ -354,7 +395,6 @@ async function fetchStats() {
     state.apiOnline = true;
     renderStats(stats);
     setConnection("online", "Proxy API");
-    el.lastSync.textContent = new Date().toLocaleString("id-ID");
     el.chartUpdated.textContent = new Date().toLocaleTimeString("id-ID");
     logModeOnce("online", "success", `Stats tersinkron. Total: ${stats.total_records || 0} record.`);
   } catch (error) {
@@ -383,6 +423,111 @@ async function fetchData() {
   }
 
   renderTable(getFilteredData());
+}
+
+async function fetchAdminUsers() {
+  if (!isAdmin()) {
+    renderAdminUsers([]);
+    return;
+  }
+
+  if (state.isDemoSession) {
+    renderAdminUsers(getDemoUsers());
+    return;
+  }
+
+  try {
+    el.btnAdminRefresh.disabled = true;
+    const payload = await apiGet("admin/users");
+    renderAdminUsers(Array.isArray(payload.users) ? payload.users : []);
+  } catch (error) {
+    el.adminUsersBody.innerHTML = `
+      <tr>
+        <td colspan="6" class="empty">Gagal memuat user: ${escapeHtml(error.message)}</td>
+      </tr>
+    `;
+    addLog("warn", `Admin users gagal dimuat. ${error.message}`);
+  } finally {
+    el.btnAdminRefresh.disabled = false;
+  }
+}
+
+function renderAdminUsers(users) {
+  if (!isAdmin()) {
+    el.adminUsersBody.innerHTML = `
+      <tr>
+        <td colspan="6" class="empty">Hanya admin yang dapat melihat daftar user.</td>
+      </tr>
+    `;
+    return;
+  }
+
+  if (!users.length) {
+    el.adminUsersBody.innerHTML = `
+      <tr>
+        <td colspan="6" class="empty">Belum ada user.</td>
+      </tr>
+    `;
+    return;
+  }
+
+  el.adminUsersBody.innerHTML = users
+    .map((user) => {
+      const role = user.role || "user";
+      const nextRole = role === "admin" ? "user" : "admin";
+      const isCurrentUser = user.id === state.currentUser?.id;
+      const isDemoAdminPanel = state.isDemoSession;
+      const disableDemoteSelf = isCurrentUser && nextRole === "user";
+      const disableAction = isDemoAdminPanel || disableDemoteSelf;
+      const createdAt = user.created_at ? new Date(user.created_at).toLocaleString("id-ID") : "-";
+      const lastLoginAt = user.last_login_at ? new Date(user.last_login_at).toLocaleString("id-ID") : "-";
+
+      return `
+        <tr>
+          <td>${escapeHtml(user.name || "-")}</td>
+          <td class="mono">${escapeHtml(user.email || "-")}</td>
+          <td><span class="badge badge-${safeToken(role)}">${escapeHtml(role)}</span></td>
+          <td class="mono">${escapeHtml(createdAt)}</td>
+          <td class="mono">${escapeHtml(lastLoginAt)}</td>
+          <td>
+            <button
+              class="btn btn-secondary btn-sm"
+              type="button"
+              data-user-role-action
+              data-user-id="${escapeHtml(user.id)}"
+              data-next-role="${escapeHtml(nextRole)}"
+              ${disableAction ? "disabled" : ""}
+            >
+              ${isDemoAdminPanel ? "Preview" : `Jadikan ${escapeHtml(nextRole)}`}
+            </button>
+          </td>
+        </tr>
+      `;
+    })
+    .join("");
+}
+
+async function handleAdminUserAction(event) {
+  const button = event.target.closest("[data-user-role-action]");
+  if (!button || button.disabled) return;
+
+  const userId = button.dataset.userId;
+  const nextRole = button.dataset.nextRole;
+
+  try {
+    button.disabled = true;
+    button.textContent = "Menyimpan...";
+    const payload = await apiPost(`admin/users/${encodeURIComponent(userId)}/role`, {
+      role: nextRole,
+    });
+    showToast(payload.message || "Role user diperbarui.", "success");
+    addLog("success", `Role ${payload.user?.email || "user"} menjadi ${payload.user?.role}.`);
+    fetchAdminUsers();
+  } catch (error) {
+    showToast(`Gagal update role: ${error.message}`, "error");
+    addLog("error", `Update role gagal: ${error.message}`);
+    fetchAdminUsers();
+  }
 }
 
 function applyFilter() {
@@ -638,7 +783,6 @@ function loadDemoStats() {
   };
   renderStats(stats);
   el.chartUpdated.textContent = "Demo";
-  el.lastSync.textContent = "Mode demo";
 }
 
 function getDemoData() {
@@ -688,6 +832,36 @@ function getDemoData() {
       status: "processed",
       summary: "Record dari batch-upload.json",
       source_file: "batch-upload.json",
+    },
+  ];
+}
+
+function getDemoUsers() {
+  const now = new Date().toISOString();
+  return [
+    {
+      id: "preview-admin",
+      name: "Preview Admin",
+      email: "admin@kelompok11cc.my.id",
+      role: "admin",
+      created_at: now,
+      last_login_at: now,
+    },
+    {
+      id: "preview-user",
+      name: "Preview User",
+      email: "user@kelompok11cc.my.id",
+      role: "user",
+      created_at: now,
+      last_login_at: now,
+    },
+    {
+      id: "preview-operator",
+      name: "Operator Data",
+      email: "operator@kelompok11cc.my.id",
+      role: "user",
+      created_at: now,
+      last_login_at: "",
     },
   ];
 }
