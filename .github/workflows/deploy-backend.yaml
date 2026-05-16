@@ -36,6 +36,7 @@ jobs:
       - name: 'Create backend package'
         run: |
           cd src/backend
+          printf "[config]\nSCM_DO_BUILD_DURING_DEPLOYMENT = true\n" > .deployment
           zip -r ../../backend.zip . -x '__pycache__/*' '*.pyc'
 
       - name: 'Deploy to Azure Function'
@@ -43,7 +44,19 @@ jobs:
           az functionapp deployment source config-zip \
             --name 'func-backend-monitoring-k11' \
             --resource-group 'RG-Kelompok11' \
-            --src backend.zip
+            --src backend.zip \
+            --build-remote true \
+            --timeout 600
           az functionapp restart \
             --name 'func-backend-monitoring-k11' \
             --resource-group 'RG-Kelompok11'
+
+      - name: 'Verify Azure Functions indexing'
+        run: |
+          functions="$(az functionapp function list \
+            --name 'func-backend-monitoring-k11' \
+            --resource-group 'RG-Kelompok11' \
+            --query '[].name' \
+            -o tsv)"
+          echo "$functions"
+          test -n "$functions"
