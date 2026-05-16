@@ -69,12 +69,7 @@ Frontend di Cloudflare Pages menggunakan custom domain:
 https://kelompok11cc.my.id
 ```
 
-Nameserver domain:
-
-```text
-***REMOVED_NAMESERVER***
-***REMOVED_NAMESERVER***
-```
+Nameserver domain diarahkan ke Cloudflare. Detail nameserver tidak dicantumkan di repository publik.
 
 Frontend mengakses backend melalui proxy same-origin:
 

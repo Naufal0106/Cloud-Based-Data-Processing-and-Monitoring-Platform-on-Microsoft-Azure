@@ -57,6 +57,7 @@ Fitur yang sudah dibuat:
 - Endpoint statistik data.
 - Endpoint list data terbaru.
 - Endpoint upload data.
+- Endpoint admin-only untuk melihat user dan mengubah role.
 - Blob trigger untuk memproses file baru di container `raw-data`.
 - Parsing dan klasifikasi data.
 - Penyimpanan hasil proses ke Cosmos DB.
@@ -74,6 +75,8 @@ Endpoint utama:
 | GET | `/api/stats` | Statistik data |
 | GET | `/api/data` | Data terbaru |
 | POST | `/api/upload` | Upload file data |
+| GET | `/api/admin/users` | Admin-only daftar user |
+| PATCH/POST | `/api/admin/users/{user_id}/role` | Admin-only update role |
 
 ### Upload CSV dan Excel
 
@@ -123,6 +126,19 @@ Cosmos DB dipakai untuk dua jenis data:
 | `users` | Menyimpan user login/register | `/email` |
 
 Data user tidak menyimpan password plaintext. Yang disimpan adalah hash password.
+
+Role user:
+
+- `user`: login, melihat dashboard, membaca data/statistik, dan upload data.
+- `admin`: semua akses user, ditambah panel Admin Users untuk melihat user dan mengubah role.
+
+Register publik selalu membuat role `user`. Admin pertama dibuat manual/internal dengan script:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts\generate-admin-user.ps1 -Name "Admin Kelompok 11" -Email "admin@kelompok11cc.my.id"
+```
+
+Domain admin tidak perlu dipisah. Dashboard tetap memakai `kelompok11cc.my.id`, sedangkan akses admin dibedakan melalui role pada token login.
 
 ### Cloudflare Proxy
 
@@ -231,8 +247,8 @@ Cosmos DB container users
 Jika login berhasil:
 
 1. Backend mengembalikan token sesi.
-2. Dashboard menyimpan token di browser local storage.
-3. Request ke `/api/stats`, `/api/data`, dan `/api/upload` mengirim header:
+2. Dashboard menyimpan token di `sessionStorage`, sehingga token tidak bertahan permanen setelah sesi browser ditutup.
+3. Request ke `/api/stats`, `/api/data`, `/api/upload`, dan endpoint admin mengirim header:
 
 ```text
 Authorization: Bearer <token>
@@ -362,12 +378,7 @@ Custom domain:
 kelompok11cc.my.id
 ```
 
-Nameserver:
-
-```text
-***REMOVED_NAMESERVER***
-***REMOVED_NAMESERVER***
-```
+Nameserver domain diarahkan ke Cloudflare. Detail nameserver tidak dicantumkan di dokumen yang dibagikan.
 
 Azure Functions perlu redeploy setelah perubahan backend, terutama karena dependency Excel ditambahkan:
 

@@ -38,21 +38,28 @@
           <button class="auth-tab" id="tab-register" type="button">Register</button>
         </div>
 
-        <form class="auth-form" id="auth-form">
+        <form class="auth-form" id="auth-form" autocomplete="off">
           <label class="auth-field" id="name-field" hidden>
             <span>Nama</span>
-            <input id="auth-name" type="text" autocomplete="name" />
+            <input id="auth-name" type="text" autocomplete="off" />
           </label>
           <label class="auth-field">
             <span>Email</span>
-            <input id="auth-email" type="email" autocomplete="email" required />
+            <input
+              id="auth-email"
+              type="email"
+              autocomplete="off"
+              autocapitalize="none"
+              spellcheck="false"
+              required
+            />
           </label>
           <label class="auth-field">
             <span>Password</span>
             <input
               id="auth-password"
               type="password"
-              autocomplete="current-password"
+              autocomplete="off"
               minlength="8"
               required
             />
@@ -62,9 +69,6 @@
 
           <button class="btn btn-primary auth-submit" id="auth-submit" type="submit">
             Login
-          </button>
-          <button class="btn btn-secondary auth-demo" id="auth-demo" type="button">
-            Masuk Demo
           </button>
         </form>
       </div>
@@ -101,19 +105,11 @@
         <div>
           <p class="eyebrow">Cloud monitoring dashboard</p>
           <h1 id="page-title">Realtime Data Processing</h1>
-          <p class="page-subtitle">
-            Frontend berjalan di Cloudflare Pages, backend dan data pipeline
-            berjalan di Microsoft Azure.
-          </p>
-        </div>
-        <div class="runtime-panel">
-          <span class="runtime-label">Backend</span>
-          <span class="runtime-value mono" id="backend-mode-label">Proxy / demo mode</span>
-          <span class="runtime-label">Security</span>
-          <span class="runtime-value mono">API key hidden</span>
-          <span class="runtime-label">Last sync</span>
-          <span class="runtime-value mono" id="last-sync">Belum sinkron</span>
-        </div>
+        <p class="page-subtitle">
+          Frontend berjalan di Cloudflare Pages, backend dan data pipeline
+          berjalan di Microsoft Azure.
+        </p>
+      </div>
       </section>
 
       <section class="stats-grid" aria-label="Ringkasan data">
@@ -137,6 +133,38 @@
           <strong class="stat-value" id="s-error">-</strong>
           <span class="stat-sub">Log atau input bermasalah</span>
         </article>
+      </section>
+
+      <section class="panel admin-panel" id="admin-panel" hidden>
+        <div class="panel-header panel-header-wide">
+          <div>
+            <h2>Admin Users</h2>
+            <p>Kelola role user dashboard. Register publik tetap membuat role user.</p>
+          </div>
+          <button class="btn btn-secondary btn-sm" id="btnAdminRefresh" type="button">
+            Reload Users
+          </button>
+        </div>
+
+        <div class="table-wrap admin-table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Nama</th>
+                <th>Email</th>
+                <th>Role</th>
+                <th>Terdaftar</th>
+                <th>Login Terakhir</th>
+                <th>Aksi</th>
+              </tr>
+            </thead>
+            <tbody id="admin-users-tbody">
+              <tr>
+                <td colspan="6" class="empty">Admin panel belum dimuat.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
       </section>
 
       <section class="content-grid">
@@ -174,7 +202,13 @@
 
           <div class="upload-actions">
             <button class="btn btn-primary" id="btnUpload" type="button" disabled>
-              Upload & Proses
+              Analisis Data
+            </button>
+            <button class="btn btn-secondary" id="btnCleanUpload" type="button" disabled>
+              Bersihkan & Proses
+            </button>
+            <button class="btn btn-secondary" id="btnRawUpload" type="button" disabled>
+              Proses Apa Adanya
             </button>
             <span class="mono file-info" id="file-info">Belum ada file</span>
           </div>
@@ -185,11 +219,106 @@
         </article>
       </section>
 
+      <section class="panel science-panel" aria-labelledby="science-title">
+        <div class="panel-header panel-header-wide">
+          <div>
+            <h2 id="science-title">Data Science Processing</h2>
+            <p>Profiling, quality check, cleaning otomatis, dan chart eksplorasi data.</p>
+          </div>
+          <div class="toolbar">
+            <span class="mono panel-meta" id="science-source">Belum ada analisis</span>
+            <button class="btn btn-secondary btn-sm" id="btnAnalyticsRefresh" type="button">
+              Reload Analitik
+            </button>
+          </div>
+        </div>
+
+        <div class="science-metrics" aria-label="Ringkasan kualitas data">
+          <div class="science-metric">
+            <span>Quality Score</span>
+            <strong id="ds-quality-score">-</strong>
+          </div>
+          <div class="science-metric">
+            <span>Missing Cell</span>
+            <strong id="ds-missing-cells">-</strong>
+          </div>
+          <div class="science-metric">
+            <span>Duplicate Row</span>
+            <strong id="ds-duplicate-rows">-</strong>
+          </div>
+          <div class="science-metric">
+            <span>Numeric Column</span>
+            <strong id="ds-numeric-columns">-</strong>
+          </div>
+        </div>
+
+        <div class="science-grid">
+          <div class="science-chart">
+            <div>
+              <h3>Status Data</h3>
+              <p>Distribusi hasil klasifikasi setelah pemrosesan.</p>
+            </div>
+            <div class="mini-chart-wrap">
+              <canvas id="scienceStatusChart"></canvas>
+            </div>
+          </div>
+          <div class="science-chart">
+            <div>
+              <h3>Missing Value</h3>
+              <p>Kolom dengan nilai kosong paling banyak.</p>
+            </div>
+            <div class="mini-chart-wrap">
+              <canvas id="scienceMissingChart"></canvas>
+            </div>
+          </div>
+          <div class="science-chart">
+            <div>
+              <h3>Distribusi Numerik</h3>
+              <p>Histogram kolom numerik utama.</p>
+            </div>
+            <div class="mini-chart-wrap">
+              <canvas id="scienceNumericChart"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <div class="science-details">
+          <div class="science-issues">
+            <h3>Quality Issues</h3>
+            <ul id="science-issues-list">
+              <li>Upload file atau reload analitik untuk melihat hasil.</li>
+            </ul>
+          </div>
+
+          <div>
+            <h3>Profil Kolom</h3>
+            <div class="table-wrap science-table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Kolom</th>
+                    <th>Tipe</th>
+                    <th>Kosong</th>
+                    <th>Unik</th>
+                    <th>Ringkasan</th>
+                  </tr>
+                </thead>
+                <tbody id="science-columns-tbody">
+                  <tr>
+                    <td colspan="5" class="empty">Belum ada profil data.</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <section class="panel data-panel">
         <div class="panel-header panel-header-wide">
           <div>
             <h2>Data Records</h2>
-            <p>Record terbaru dari Cosmos DB atau data demo saat API belum aktif.</p>
+            <p>Record terbaru dari Cosmos DB setelah user berhasil login.</p>
           </div>
           <div class="toolbar">
             <label class="field">
