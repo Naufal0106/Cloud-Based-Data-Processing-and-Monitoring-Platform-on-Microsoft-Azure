@@ -34,6 +34,7 @@ const el = {};
 function init() {
   cacheElements();
   bindEvents();
+  state.authMode = getRequestedAuthMode() || state.authMode;
   startClock();
   initChart();
   updateUploadButton();
@@ -112,8 +113,8 @@ function cacheElements() {
 
 function bindEvents() {
   el.authForm.addEventListener("submit", handleAuthSubmit);
-  el.tabLogin.addEventListener("click", () => setAuthMode("login"));
-  el.tabRegister.addEventListener("click", () => setAuthMode("register"));
+  el.tabLogin.addEventListener("click", () => setAuthMode("login", { syncUrl: true }));
+  el.tabRegister.addEventListener("click", () => setAuthMode("register", { syncUrl: true }));
   el.btnLogout.addEventListener("click", logout);
   el.btnRefresh.addEventListener("click", fetchAll);
   el.btnDataRefresh.addEventListener("click", fetchData);
@@ -144,9 +145,16 @@ function bindEvents() {
     el.dropzone.classList.remove("drag-over");
     handleFile(event.dataTransfer.files[0]);
   });
+
+  window.addEventListener("hashchange", () => {
+    const requestedMode = getRequestedAuthMode();
+    if (requestedMode && !el.authScreen.hidden) {
+      setAuthMode(requestedMode);
+    }
+  });
 }
 
-function setAuthMode(mode) {
+function setAuthMode(mode, options = {}) {
   state.authMode = mode;
   const isRegister = mode === "register";
 
@@ -157,6 +165,25 @@ function setAuthMode(mode) {
   el.authSubmit.textContent = isRegister ? "Register" : "Login";
   el.authPassword.autocomplete = "off";
   setAuthMessage("");
+
+  if (options.syncUrl) {
+    updateAuthUrl(mode);
+  }
+}
+
+function getRequestedAuthMode() {
+  const params = new URLSearchParams(window.location.search);
+  const authMode = String(params.get("auth") || window.location.hash.replace("#", "")).toLowerCase();
+  return authMode === "register" || authMode === "login" ? authMode : "";
+}
+
+function updateAuthUrl(mode) {
+  if (!window.history?.replaceState) return;
+
+  const url = new URL(window.location.href);
+  url.searchParams.set("auth", mode);
+  url.hash = "";
+  window.history.replaceState({}, "", url);
 }
 
 async function handleAuthSubmit(event) {
