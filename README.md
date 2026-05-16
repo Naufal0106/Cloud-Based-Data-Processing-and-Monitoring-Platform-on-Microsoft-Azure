@@ -89,8 +89,31 @@ Frontend tidak memanggil Azure Functions secara langsung. Dashboard memanggil en
 | GET | `/api/data?limit=50` | Mengambil data terbaru |
 | GET | `/api/data?status=processed&limit=50` | Mengambil data berdasarkan status |
 | POST | `/api/upload` | Upload JSON, CSV, XLSX, atau XLS langsung untuk diproses |
+| GET | `/api/admin/users` | Admin-only: melihat daftar user |
+| PATCH/POST | `/api/admin/users/{user_id}/role` | Admin-only: mengubah role user |
 
 Endpoint `stats`, `data`, dan `upload` di Azure tetap menggunakan `auth_level=FUNCTION`, tetapi function key tidak disimpan di frontend.
+
+## Role User dan Admin
+
+Dashboard memakai satu domain yang sama, yaitu `kelompok11cc.my.id`. Domain admin tidak wajib dibuat terpisah karena akses dibedakan lewat role login.
+
+Role yang digunakan:
+
+| Role | Akses |
+| --- | --- |
+| `user` | Login, melihat dashboard, membaca data/statistik, dan upload data |
+| `admin` | Semua akses user, ditambah melihat daftar user dan mengubah role |
+
+Register publik selalu membuat akun dengan role `user`. Admin tidak bisa dibuat dari form register publik agar tidak disalahgunakan.
+
+Untuk membuat admin pertama, generate dokumen user admin:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/generate-admin-user.ps1 -Name "Admin Kelompok 11" -Email "admin@kelompok11cc.my.id"
+```
+
+Salin JSON yang dihasilkan ke Cosmos DB container `users` dengan partition key email. Setelah admin pertama bisa login, role user lain dapat dikelola dari panel **Admin Users** di dashboard.
 
 ## Format Upload
 
@@ -168,6 +191,9 @@ Contoh CSV untuk uji UI tersedia di `samples/sample-telemetry.csv`.
 |       `-- [[path]].js
 |-- samples/
 |   `-- sample-telemetry.csv
+|-- scripts/
+|   |-- generate-admin-user.ps1
+|   `-- test-auth-db.ps1
 |-- AGENTS.md
 |-- .gitignore
 `-- README.md
@@ -269,12 +295,7 @@ Custom domain:
 kelompok11cc.my.id
 ```
 
-Nameserver domain sudah diarahkan ke Cloudflare:
-
-```text
-***REMOVED_NAMESERVER***
-***REMOVED_NAMESERVER***
-```
+Nameserver domain sudah diarahkan ke Cloudflare. Detail nameserver tidak dicantumkan di repository publik.
 
 Simpan `AZURE_FUNCTION_URL` dan `AZURE_FUNCTION_KEY` sebagai environment variable Cloudflare Pages Function agar URL Azure dan function key tidak terlihat di browser.
 
