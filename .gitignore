@@ -86,6 +86,7 @@ pnpm-debug.log*
 # Logs / Temporary Files
 # ===============================
 *.log
+*.zip
 *.tmp
 *.temp
 *.bak
@@ -99,6 +100,7 @@ tmp/
 # ===============================
 # Editor / IDE
 # ===============================
+AGENTS.md
 .vscode/
 .idea/
 *.code-workspace

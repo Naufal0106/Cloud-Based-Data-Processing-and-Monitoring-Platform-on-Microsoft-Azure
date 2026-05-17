@@ -122,14 +122,14 @@ try {
     }
     Write-Host "OK stats total_records: $($stats.stats.total_records)"
 
-    Write-Host "`n[5/5] Upload sample CSV telemetry..."
+    Write-Host "`n[5/5] Upload generated CSV telemetry..."
     $csv = @"
 deviceId,temperature,level,message
 test-device-01,31,,
 test-device-02,86,,
 test-app-01,,INFO,Auth database test upload
 "@
-    $upload = Invoke-MultipartUpload -Path "upload" -Token $token -CsvContent $csv -FileName "sample-telemetry.csv"
+    $upload = Invoke-MultipartUpload -Path "upload" -Token $token -CsvContent $csv -FileName "generated-test-upload.csv"
     if (-not $upload.success) {
         throw "Upload response tidak valid"
     }
