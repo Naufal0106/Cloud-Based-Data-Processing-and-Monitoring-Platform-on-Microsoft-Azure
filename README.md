@@ -111,14 +111,6 @@ Role yang digunakan:
 
 Register publik selalu membuat akun dengan role `user`. Admin tidak bisa dibuat dari form register publik agar tidak disalahgunakan.
 
-Untuk membuat admin pertama, generate dokumen user admin:
-
-```powershell
-powershell -ExecutionPolicy Bypass -File scripts/generate-admin-user.ps1 -Name "Admin Kelompok 11" -Email "admin@kelompok11cc.my.id"
-```
-
-Salin JSON yang dihasilkan ke Cosmos DB container `users` dengan partition key email. Setelah admin pertama bisa login, role user lain dapat dikelola dari panel **Admin Users** di dashboard.
-
 ## Format Upload
 
 Dashboard menerima file:
@@ -212,7 +204,6 @@ Data telemetry di dashboard dibatasi berdasarkan akun login. Role `user` hanya m
 |   `-- api/
 |       `-- [[path]].js
 |-- scripts/
-|   |-- generate-admin-user.ps1
 |   `-- test-auth-db.ps1
 |-- .gitignore
 `-- README.md
