@@ -8,6 +8,12 @@ Laporan PDF rinci Minggu 1-4 tersedia di:
 docs/Laporan_Minggu_1-4_Kelompok_11.pdf
 ```
 
+Laporan yang dipisah per minggu tersedia di:
+
+```text
+docs/laporan-mingguan/
+```
+
 ## Bukti Yang Sudah Ada
 
 | Minggu | Bukti | File |

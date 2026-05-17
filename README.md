@@ -290,6 +290,8 @@ Bukti screenshot yang aman untuk laporan disimpan di `docs/evidence/`. Screensho
 
 Laporan PDF rinci untuk roadmap Minggu 1-4 tersedia di `docs/Laporan_Minggu_1-4_Kelompok_11.pdf`.
 
+Versi laporan yang dipisah per minggu tersedia di folder `docs/laporan-mingguan/`.
+
 ## Deployment
 
 ### Backend ke Azure Functions
