@@ -48,6 +48,7 @@ Arsitektur akhir menggunakan dua platform:
 - Dokumentasi arsitektur, jaringan, IAM, dan resource.
 - CI/CD backend melalui GitHub Actions.
 - Frontend statis yang siap dideploy ke Cloudflare Pages.
+- Bukti visual tersimpan di `docs/evidence/architecture-final-target.png`.
 
 ## Status
 

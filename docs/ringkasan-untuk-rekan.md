@@ -28,7 +28,6 @@ Fitur yang sudah dibuat:
 
 - Tampilan dashboard diperbarui agar lebih rapi dan siap presentasi.
 - Login dan register ditambahkan sebelum user masuk dashboard.
-- Mode demo tersedia untuk test UI ketika backend/proxy belum aktif.
 - Statistik data tampil dalam kartu ringkasan.
 - Chart distribusi status data menggunakan Chart.js.
 - Tabel record terbaru dari Cosmos DB atau data demo.

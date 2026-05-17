@@ -286,6 +286,8 @@ Folder `infra` berisi konfigurasi Terraform untuk resource Azure:
 | 3 | Layanan inti end-to-end | `src/backend/`, `src/dashboard/`, `functions/api/`, `docs/week3-core-services.md` | Selesai |
 | 4 | Monitoring, keamanan, backup, optimasi biaya | `infra/monitoring.tf`, `docs/week4-monitoring-security-optimization.md` | Baseline selesai, screenshot Azure Portal perlu dilampirkan saat pengumpulan |
 
+Bukti screenshot yang aman untuk laporan disimpan di `docs/evidence/`. Screenshot dari Azure Portal dan Cloudflare Portal perlu dicek ulang sebelum commit agar tidak memuat function key, token, access key, atau connection string.
+
 ## Deployment
 
 ### Backend ke Azure Functions

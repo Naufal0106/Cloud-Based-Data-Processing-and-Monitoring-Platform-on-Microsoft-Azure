@@ -114,6 +114,24 @@ Script pengujian API:
 powershell -ExecutionPolicy Bypass -File scripts\test-auth-db.ps1
 ```
 
+## Bukti Screenshot
+
+Screenshot yang sudah tersedia:
+
+| Bukti | File |
+| --- | --- |
+| Halaman login kosong | `docs/evidence/ui-login.png` |
+| Halaman register | `docs/evidence/ui-register.png` |
+| Preview dashboard user | `docs/evidence/ui-user-preview.png` |
+| Preview dashboard admin | `docs/evidence/ui-admin-preview.png` |
+
+Screenshot tambahan yang disarankan dari portal:
+
+- Azure Function App aktif dan endpoint health check.
+- Cosmos DB database `db-platform-monitoring` dengan container `telemetry-data` dan `users`.
+- Blob Storage container `raw-data`.
+- Cloudflare Pages custom domain aktif.
+
 ## Catatan Kesesuaian Roadmap
 
 - Database terkelola: Azure Cosmos DB.

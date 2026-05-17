@@ -149,6 +149,8 @@ Beberapa deliverable Minggu 4 tetap membutuhkan screenshot dari Azure Portal:
 - Cost Management breakdown untuk resource group `RG-Kelompok11`.
 - Microsoft Defender for Cloud/Security posture atau rekomendasi keamanan.
 
+Daftar nama file screenshot yang disarankan tersedia di `docs/evidence/README.md`.
+
 ## Status Minggu 4
 
 | Deliverable | Status |
