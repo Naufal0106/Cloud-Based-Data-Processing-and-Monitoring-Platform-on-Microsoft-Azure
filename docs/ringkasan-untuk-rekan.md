@@ -128,12 +128,6 @@ Role user:
 - `user`: login, melihat dashboard, membaca data/statistik, dan upload data.
 - `admin`: semua akses user, ditambah panel Admin Users untuk melihat user dan mengubah role.
 
-Register publik selalu membuat role `user`. Admin pertama dibuat manual/internal dengan script:
-
-```powershell
-powershell -ExecutionPolicy Bypass -File scripts\generate-admin-user.ps1 -Name "Admin Kelompok 11" -Email "admin@kelompok11cc.my.id"
-```
-
 Domain admin tidak perlu dipisah. Dashboard tetap memakai `kelompok11cc.my.id`, sedangkan akses admin dibedakan melalui role pada token login.
 
 ### Cloudflare Proxy
@@ -174,7 +168,7 @@ Yang sudah disiapkan:
 - Key Vault secret untuk Cosmos connection string.
 - Key Vault secret untuk auth token.
 - Application Insights.
-- Network, security group, dan konfigurasi pendukung.
+- Network, security group, alert monitoring, lifecycle policy, dan konfigurasi pendukung.
 
 Secret penting untuk backend:
 
@@ -322,12 +316,6 @@ Server lokal yang sebelumnya dipakai:
 
 ```text
 http://127.0.0.1:4173/
-```
-
-Jika backend belum aktif, gunakan tombol:
-
-```text
-Masuk Demo
 ```
 
 Untuk test upload UI, gunakan file JSON/CSV/Excel lokal. Sample data bawaan sengaja tidak disimpan di repository.

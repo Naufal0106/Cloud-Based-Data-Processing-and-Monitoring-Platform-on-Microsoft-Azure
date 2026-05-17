@@ -180,8 +180,6 @@ Buka:
 http://127.0.0.1:4173/
 ```
 
-Jika backend proxy belum aktif, gunakan tombol **Masuk Demo** untuk mengecek tampilan dashboard.
-
 Preview role lokal tanpa backend:
 
 ```text
@@ -211,7 +209,7 @@ Yang diuji:
 - `POST /api/login`
 - `GET /api/me`
 - `GET /api/stats`
-- `POST /api/upload` memakai sample CSV multipart
+- `POST /api/upload` memakai CSV multipart yang dibuat otomatis oleh script
 
 Jika ingin memakai base URL lain:
 
@@ -236,23 +234,17 @@ Jika muncul error SSL/TLS, pastikan custom domain Cloudflare Pages sudah aktif d
 | GET | `/api/admin/users` | Admin-only daftar user |
 | PATCH/POST | `/api/admin/users/{user_id}/role` | Admin-only update role user |
 
-## Admin Pertama
+## Role Admin
 
 Domain admin tidak wajib dipisah. Dashboard tetap memakai `kelompok11cc.my.id`; akses admin dibedakan dari token login yang memiliki role `admin`.
 
-Register publik hanya membuat role `user`. Untuk membuat admin pertama, generate dokumen user admin:
-
-```powershell
-powershell -ExecutionPolicy Bypass -File scripts/generate-admin-user.ps1 -Name "Admin Kelompok 11" -Email "admin@kelompok11cc.my.id"
-```
-
-Masukkan JSON yang tampil ke Cosmos DB container `users` dengan partition key email. Setelah admin pertama login, panel **Admin Users** akan tampil di dashboard dan dapat dipakai untuk mengubah role user lain.
+Register publik hanya membuat role `user`. Akses admin tidak disediakan melalui form publik dan harus dikelola melalui kontrol internal yang dilindungi role.
 
 ## Troubleshooting
 
 | Masalah | Penyebab Umum | Solusi |
 | --- | --- | --- |
-| Dashboard masuk demo mode | Backend proxy belum aktif | Jalankan Cloudflare Pages Function atau gunakan demo mode lokal |
+| Dashboard tidak bisa memuat data | Backend proxy belum aktif | Jalankan Cloudflare Pages Function dan pastikan environment Cloudflare terisi |
 | Login gagal 500 | `AUTH_TOKEN_SECRET` belum ada | Isi variable Terraform atau app setting Azure |
 | CORS error | Origin belum diizinkan | Tambahkan origin Cloudflare/localhost di Azure Function App |
 | Upload gagal 401/403 | Secret Cloudflare salah | Periksa `AZURE_FUNCTION_URL` dan `AZURE_FUNCTION_KEY` di Cloudflare |

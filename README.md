@@ -178,7 +178,9 @@ Data telemetry di dashboard dibatasi berdasarkan akun login. Role `user` hanya m
 |   |-- progress-report.md
 |   |-- resource-inventory.md
 |   |-- week1-planning.md
-|   `-- week2-infrastructure.md
+|   |-- week2-infrastructure.md
+|   |-- week3-core-services.md
+|   `-- week4-monitoring-security-optimization.md
 |-- infra/
 |   |-- backend.tf
 |   |-- database.tf
@@ -186,6 +188,7 @@ Data telemetry di dashboard dibatasi berdasarkan akun login. Role `user` hanya m
 |   |-- iam.tf
 |   |-- locals.tf
 |   |-- main.tf
+|   |-- monitoring.tf
 |   |-- network.tf
 |   |-- security.tf
 |   |-- storage.tf
@@ -268,9 +271,20 @@ Folder `infra` berisi konfigurasi Terraform untuk resource Azure:
 - Key Vault untuk secret Cosmos DB
 - Key Vault secret `auth-token-secret` untuk tanda tangan token login
 - Application Insights untuk monitoring
+- Azure Monitor action group dan 3 alert rule operasional
+- Storage lifecycle policy untuk optimasi retensi file mentah
 - Traffic Manager untuk endpoint routing/failover
 - NSG untuk subnet publik dan privat
 - RBAC/IAM untuk anggota tim
+
+## Kesesuaian Roadmap Minggu 1-4
+
+| Minggu | Fokus Roadmap | Bukti di Project | Status |
+| --- | --- | --- | --- |
+| 1 | Perencanaan dan arsitektur | `docs/week1-planning.md`, `docs/architecture-notes.md`, `arch/arsitektur_final-target.png` | Selesai |
+| 2 | Infrastruktur dasar, jaringan, IAM, IaC | `infra/`, `docs/week2-infrastructure.md`, `docs/iam-config.md`, `docs/resource-inventory.md` | Selesai |
+| 3 | Layanan inti end-to-end | `src/backend/`, `src/dashboard/`, `functions/api/`, `docs/week3-core-services.md` | Selesai |
+| 4 | Monitoring, keamanan, backup, optimasi biaya | `infra/monitoring.tf`, `docs/week4-monitoring-security-optimization.md` | Baseline selesai, screenshot Azure Portal perlu dilampirkan saat pengumpulan |
 
 ## Deployment
 

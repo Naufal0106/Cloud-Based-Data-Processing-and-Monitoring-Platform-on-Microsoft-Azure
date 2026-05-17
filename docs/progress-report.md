@@ -41,7 +41,6 @@ Proyek telah berkembang dari perencanaan infrastruktur Azure menjadi platform hy
 - UI dashboard sudah diperbarui agar lebih rapi dan responsive.
 - Layar login/register ditambahkan sebelum dashboard.
 - Panel **Admin Users** tampil hanya untuk role `admin`.
-- Mode demo tersedia jika backend proxy belum dikonfigurasi.
 - Upload JSON, CSV, XLSX, dan XLS divalidasi di sisi browser lalu diproses di backend.
 - Konfigurasi frontend menggunakan `env.js` lokal atau environment Cloudflare Pages.
 
@@ -50,12 +49,12 @@ Proyek telah berkembang dari perencanaan infrastruktur Azure menjadi platform hy
 - Terraform digunakan untuk provisioning Azure.
 - GitHub Actions digunakan untuk deploy backend ke Azure Functions.
 - `.gitignore` menjaga file secret dan local config agar tidak masuk repository.
-- Script `scripts/generate-admin-user.ps1` dibuat untuk menyiapkan admin pertama secara manual/internal.
+- Azure Monitor alert dan storage lifecycle policy disiapkan untuk deliverable Minggu 4.
 
 ### Dokumentasi
 
 - README diperbarui sesuai arsitektur Cloudflare + Azure.
-- Dokumen arsitektur, network plan, IAM, resource inventory, dan progress report diselaraskan.
+- Dokumen arsitektur, network plan, IAM, resource inventory, week 3, week 4, dan progress report diselaraskan.
 
 ## Kontribusi Tim
 
@@ -83,14 +82,15 @@ Proyek telah berkembang dari perencanaan infrastruktur Azure menjadi platform hy
 | Backend Azure Functions | Siap deploy melalui GitHub Actions |
 | Infrastruktur Azure | Dikelola Terraform |
 | Dokumentasi | Diperbarui |
-| Security baseline | Ada, perlu hardening lanjutan untuk production |
+| Monitoring dan alerting | Baseline Terraform tersedia, perlu screenshot portal |
+| Security baseline | Ada, perlu screenshot audit dan pembatasan SSH final |
 
 ## Rekomendasi Lanjutan
 
 - Gunakan Cloudflare Pages Function atau API Management agar function key tidak terekspos di browser publik.
 - Batasi SSH VM hanya dari IP admin.
 - Gunakan SSH key dan nonaktifkan password authentication VM.
-- Tambahkan alert Application Insights untuk error rate dan latency.
+- Lampirkan screenshot Azure Monitor alert, Application Insights, Cost Management, dan Defender for Cloud untuk laporan Minggu 4.
 - Jalankan `terraform validate` setelah provider lock/cache lokal tersinkron.
 
 ## Kesimpulan

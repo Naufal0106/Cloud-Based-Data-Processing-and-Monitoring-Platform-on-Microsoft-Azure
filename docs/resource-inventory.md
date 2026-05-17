@@ -40,6 +40,11 @@ Dokumen ini mendata resource yang digunakan pada platform data processing dan mo
 | 21 | auth-token-secret | Key Vault Secret | southeastasia | Secret tanda tangan token login | Terraform |
 | 22 | func-backend-monitoring-k11 | Application Insights | southeastasia | Observability backend | Terraform |
 | 23 | tm-monitoring-k11 | Traffic Manager Profile | Global | Routing atau endpoint failover | Terraform |
+| 24 | ag-kelompok11-ops | Azure Monitor Action Group | southeastasia | Grup notifikasi alert operasional | Terraform |
+| 25 | alert-function-5xx-errors | Azure Monitor Metric Alert | southeastasia | Alert error HTTP 5xx Azure Functions | Terraform |
+| 26 | alert-function-latency | Azure Monitor Metric Alert | southeastasia | Alert latency Azure Functions | Terraform |
+| 27 | alert-vm-cpu-high | Azure Monitor Metric Alert | southeastasia | Alert CPU tinggi pada VM | Terraform |
+| 28 | raw-data-retention | Storage Management Policy | southeastasia | Lifecycle policy file mentah | Terraform |
 
 ## Backend Runtime
 
@@ -75,7 +80,7 @@ Dokumen ini mendata resource yang digunakan pada platform data processing dan mo
 - Azure Storage static website masih dapat digunakan sebagai backup atau demo.
 - Function key harus dikonfigurasi sebagai environment variable Cloudflare Pages Function, bukan melalui `env.js`.
 - File `env.js` tidak boleh dicommit karena dapat berisi secret.
-- Register publik hanya membuat role `user`; role `admin` dibuat manual/internal dan dikelola dari panel admin.
+- Register publik hanya membuat role `user`; perubahan role admin dilakukan melalui kontrol internal/panel admin yang dilindungi role.
 
 ## Kesimpulan
 
