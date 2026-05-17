@@ -111,14 +111,6 @@ Role yang digunakan:
 
 Register publik selalu membuat akun dengan role `user`. Admin tidak bisa dibuat dari form register publik agar tidak disalahgunakan.
 
-Untuk membuat admin pertama, generate dokumen user admin:
-
-```powershell
-powershell -ExecutionPolicy Bypass -File scripts/generate-admin-user.ps1 -Name "Admin Kelompok 11" -Email "admin@kelompok11cc.my.id"
-```
-
-Salin JSON yang dihasilkan ke Cosmos DB container `users` dengan partition key email. Setelah admin pertama bisa login, role user lain dapat dikelola dari panel **Admin Users** di dashboard.
-
 ## Format Upload
 
 Dashboard menerima file:
@@ -135,7 +127,7 @@ Batas upload saat ini adalah 5 MB dan 1.000 baris data per file. Kolom yang disa
 | `temperature` | Dipakai untuk kategori `sensor` dan deteksi anomali suhu |
 | `level` + `message` | Dipakai untuk kategori `log` dan deteksi error |
 
-Contoh CSV untuk uji UI tersedia di `samples/sample-telemetry.csv`.
+Repo tidak menyertakan sample data bawaan agar akun baru mulai dari dashboard kosong. Untuk uji upload, gunakan file JSON/CSV/Excel lokal dengan format di atas.
 
 ## Data Science Processing
 
@@ -152,6 +144,8 @@ Alur upload yang direkomendasikan:
 2. Klik **Analisis Data**.
 3. Jika quality issue muncul, pilih **Bersihkan & Proses**.
 4. Jika data sudah siap atau ingin menyimpan apa adanya, pilih **Proses Apa Adanya**.
+
+Data telemetry di dashboard dibatasi berdasarkan akun login. Role `user` hanya melihat data yang ia upload sendiri, sehingga akun baru mulai dari statistik dan tabel kosong. Role `admin` dapat melihat seluruh telemetry untuk kebutuhan monitoring.
 
 ## Tech Stack
 
@@ -209,12 +203,8 @@ Alur upload yang direkomendasikan:
 |-- functions/
 |   `-- api/
 |       `-- [[path]].js
-|-- samples/
-|   `-- sample-telemetry.csv
 |-- scripts/
-|   |-- generate-admin-user.ps1
 |   `-- test-auth-db.ps1
-|-- AGENTS.md
 |-- .gitignore
 `-- README.md
 ```
@@ -260,6 +250,8 @@ window.DATA_API_BASE = "/api";
 Untuk local deployment, salin `src/dashboard/env.example.js` menjadi `src/dashboard/env.js` jika ingin override path proxy. File `env.js` sudah masuk `.gitignore`. Nilai `DATA_API_BASE` harus path same-origin seperti `/api`; URL eksternal akan diabaikan oleh dashboard agar token tidak terkirim ke domain lain.
 
 Untuk deployment publik, simpan `AZURE_FUNCTION_URL` dan `AZURE_FUNCTION_KEY` sebagai environment variable Cloudflare Pages Function, bukan di frontend.
+
+Catatan lokal: `AGENTS.md` dipakai sebagai catatan kerja agent di mesin developer dan sengaja masuk `.gitignore`, sehingga tidak menjadi bagian dari dokumentasi publik repository.
 
 ## Infrastruktur Azure
 

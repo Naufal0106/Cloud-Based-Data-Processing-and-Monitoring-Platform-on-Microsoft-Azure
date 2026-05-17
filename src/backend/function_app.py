@@ -125,6 +125,7 @@ def process_blob(myblob: func.InputStream):
 
     try:
         processed_list = process_data(data, source_file=blob_name)
+        attach_system_owner(processed_list)
         saved_count = save_to_cosmos(processed_list)
         logging.info("[BlobTrigger] %s selesai. %s record disimpan.", blob_name, saved_count)
     except Exception:
@@ -133,7 +134,7 @@ def process_blob(myblob: func.InputStream):
 
 @app.route(route="data", methods=["GET"], auth_level=func.AuthLevel.FUNCTION)
 def get_data(req: func.HttpRequest) -> func.HttpResponse:
-    auth_error = require_auth(req)
+    claims, auth_error = get_auth_claims(req)
     if auth_error:
         return auth_error
 
@@ -145,8 +146,8 @@ def get_data(req: func.HttpRequest) -> func.HttpResponse:
 
     try:
         container = get_cosmos_container()
-        query = f"SELECT TOP {limit} * FROM c WHERE {TELEMETRY_FILTER}"
-        parameters = []
+        query = f"SELECT TOP {limit} * FROM c WHERE {telemetry_scope_filter(claims)}"
+        parameters = telemetry_scope_parameters(claims)
 
         if status_filter:
             query += " AND c.status = @status"
@@ -169,32 +170,40 @@ def get_data(req: func.HttpRequest) -> func.HttpResponse:
 
 @app.route(route="stats", methods=["GET"], auth_level=func.AuthLevel.FUNCTION)
 def get_stats(req: func.HttpRequest) -> func.HttpResponse:
-    auth_error = require_auth(req)
+    claims, auth_error = get_auth_claims(req)
     if auth_error:
         return auth_error
 
     try:
         container = get_cosmos_container()
+        scope_filter = telemetry_scope_filter(claims)
+        scope_params = telemetry_scope_parameters(claims)
         stats = {
-            "total_records": count_items(container, TELEMETRY_FILTER),
+            "total_records": count_items(container, scope_filter, scope_params),
             "processed": count_items(
-                container, f"{TELEMETRY_FILTER} AND c.status = 'processed'"
+                container, f"{scope_filter} AND c.status = @processed_status",
+                scope_params + [{"name": "@processed_status", "value": "processed"}],
             ),
             "anomaly": count_items(
-                container, f"{TELEMETRY_FILTER} AND c.status = 'anomaly'"
+                container, f"{scope_filter} AND c.status = @anomaly_status",
+                scope_params + [{"name": "@anomaly_status", "value": "anomaly"}],
             ),
             "errors": count_items(
-                container, f"{TELEMETRY_FILTER} AND c.status = 'error'"
+                container, f"{scope_filter} AND c.status = @error_status",
+                scope_params + [{"name": "@error_status", "value": "error"}],
             ),
             "categories": {
                 "sensor": count_items(
-                    container, f"{TELEMETRY_FILTER} AND c.category = 'sensor'"
+                    container, f"{scope_filter} AND c.category = @sensor_category",
+                    scope_params + [{"name": "@sensor_category", "value": "sensor"}],
                 ),
                 "log": count_items(
-                    container, f"{TELEMETRY_FILTER} AND c.category = 'log'"
+                    container, f"{scope_filter} AND c.category = @log_category",
+                    scope_params + [{"name": "@log_category", "value": "log"}],
                 ),
                 "generic": count_items(
-                    container, f"{TELEMETRY_FILTER} AND c.category = 'generic'"
+                    container, f"{scope_filter} AND c.category = @generic_category",
+                    scope_params + [{"name": "@generic_category", "value": "generic"}],
                 ),
             },
             "generated_at": datetime.now(timezone.utc).isoformat(),
@@ -207,7 +216,7 @@ def get_stats(req: func.HttpRequest) -> func.HttpResponse:
 
 @app.route(route="upload", methods=["POST"], auth_level=func.AuthLevel.FUNCTION)
 def upload_data(req: func.HttpRequest) -> func.HttpResponse:
-    auth_error = require_auth(req)
+    claims, auth_error = get_auth_claims(req)
     if auth_error:
         return auth_error
 
@@ -227,6 +236,7 @@ def upload_data(req: func.HttpRequest) -> func.HttpResponse:
             data, cleaning = clean_data_payload(data)
 
         processed = process_data(data, source_file=source_file)
+        attach_owner(processed, claims)
         saved_count = save_to_cosmos(processed)
         analysis = build_data_science_payload(data, source_file, processed)
         return json_response(
@@ -274,7 +284,7 @@ def analyze_upload(req: func.HttpRequest) -> func.HttpResponse:
 
 @app.route(route="analytics", methods=["GET"], auth_level=func.AuthLevel.FUNCTION)
 def get_analytics(req: func.HttpRequest) -> func.HttpResponse:
-    auth_error = require_auth(req)
+    claims, auth_error = get_auth_claims(req)
     if auth_error:
         return auth_error
 
@@ -285,12 +295,14 @@ def get_analytics(req: func.HttpRequest) -> func.HttpResponse:
 
     try:
         container = get_cosmos_container()
+        parameters = telemetry_scope_parameters(claims)
         items = list(
             container.query_items(
                 query=(
-                    f"SELECT TOP {limit} * FROM c WHERE {TELEMETRY_FILTER} "
+                    f"SELECT TOP {limit} * FROM c WHERE {telemetry_scope_filter(claims)} "
                     "ORDER BY c.processed_at DESC"
                 ),
+                parameters=parameters,
                 enable_cross_partition_query=True,
             )
         )
@@ -1553,6 +1565,36 @@ def process_data(data: Any, source_file: str) -> list[dict[str, Any]]:
     return processed
 
 
+def telemetry_scope_filter(claims: dict[str, Any] | None) -> str:
+    if claims and str(claims.get("role", "")).lower() == ADMIN_ROLE:
+        return TELEMETRY_FILTER
+    return f"{TELEMETRY_FILTER} AND c.owner_user_id = @owner_user_id"
+
+
+def telemetry_scope_parameters(claims: dict[str, Any] | None) -> list[dict[str, Any]]:
+    if claims and str(claims.get("role", "")).lower() == ADMIN_ROLE:
+        return []
+    return [{"name": "@owner_user_id", "value": str((claims or {}).get("sub", ""))}]
+
+
+def attach_owner(records: list[dict[str, Any]], claims: dict[str, Any] | None) -> None:
+    user_id = str((claims or {}).get("sub", ""))
+    user_email = str((claims or {}).get("email", ""))
+    user_role = str((claims or {}).get("role", DEFAULT_USER_ROLE)).lower()
+
+    for record in records:
+        record["owner_user_id"] = user_id
+        record["owner_email"] = user_email
+        record["owner_role"] = user_role if user_role in USER_ROLES else DEFAULT_USER_ROLE
+
+
+def attach_system_owner(records: list[dict[str, Any]]) -> None:
+    for record in records:
+        record["owner_user_id"] = "system"
+        record["owner_email"] = ""
+        record["owner_role"] = "system"
+
+
 def build_base_record(item: Any, source_file: str) -> dict[str, Any]:
     return {
         "id": str(uuid.uuid4()),
@@ -1610,12 +1652,22 @@ def save_to_cosmos(records: list[dict[str, Any]]) -> int:
     return len(records)
 
 
-def count_items(container, where_clause: str | None = None) -> int:
+def count_items(
+    container,
+    where_clause: str | None = None,
+    parameters: list[dict[str, Any]] | None = None,
+) -> int:
     query = "SELECT VALUE COUNT(1) FROM c"
     if where_clause:
         query += f" WHERE {where_clause}"
 
-    result = list(container.query_items(query, enable_cross_partition_query=True))
+    result = list(
+        container.query_items(
+            query=query,
+            parameters=parameters or [],
+            enable_cross_partition_query=True,
+        )
+    )
     return int(result[0]) if result else 0
 
 

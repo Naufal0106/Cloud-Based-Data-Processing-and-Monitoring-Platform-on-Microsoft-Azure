@@ -102,11 +102,7 @@ Kolom yang disarankan:
 | `temperature` | Dipakai untuk kategori sensor |
 | `level` dan `message` | Dipakai untuk kategori log |
 
-Contoh file test:
-
-```text
-samples/sample-telemetry.csv
-```
+Repo tidak menyertakan sample data bawaan agar akun baru mulai dari dashboard kosong. Untuk uji upload, gunakan file JSON/CSV/Excel lokal dengan format di atas.
 
 Aturan klasifikasi:
 
@@ -278,6 +274,8 @@ Record disimpan ke Cosmos DB telemetry-data
 Dashboard refresh statistik dan tabel
 ```
 
+Data upload diberi metadata pemilik akun. Role `user` hanya membaca data yang dia upload sendiri, sedangkan role `admin` bisa membaca seluruh telemetry untuk monitoring.
+
 Blob Storage juga dapat memicu proses otomatis:
 
 ```text
@@ -332,11 +330,7 @@ Jika backend belum aktif, gunakan tombol:
 Masuk Demo
 ```
 
-Untuk test upload UI, gunakan:
-
-```text
-samples/sample-telemetry.csv
-```
+Untuk test upload UI, gunakan file JSON/CSV/Excel lokal. Sample data bawaan sengaja tidak disimpan di repository.
 
 ### Test Backend dan Database
 
@@ -394,7 +388,6 @@ AGENTS.md
 docs/deployment-guide.md
 docs/ringkasan-untuk-rekan.md
 functions/api/[[path]].js
-samples/sample-telemetry.csv
 scripts/test-auth-db.ps1
 src/dashboard/env.example.js
 ```
@@ -406,7 +399,7 @@ Yang sudah valid secara lokal:
 - Python backend lolos compile check.
 - JavaScript dashboard lolos syntax check.
 - Cloudflare proxy JavaScript lolos syntax check.
-- Parser CSV sudah dites memakai `samples/sample-telemetry.csv`.
+- Parser CSV sudah dites memakai file CSV lokal.
 - UI lokal bisa dibuka di browser.
 
 Yang masih perlu dipastikan saat deployment:
