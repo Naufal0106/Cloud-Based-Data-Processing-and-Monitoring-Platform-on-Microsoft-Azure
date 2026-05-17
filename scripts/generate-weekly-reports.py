@@ -413,6 +413,18 @@ def build_week4() -> list:
         ),
         p("Catatan", "H2X"),
         p("Sebelum screenshot portal dimasukkan ke laporan, pastikan tidak ada function key, Cloudflare API token, connection string, access key, password, file tfvars, atau tenant/subscription ID penuh yang terlihat."),
+        PageBreak(),
+        p("Bukti Azure - Application Insights dan Metrics", "H1X"),
+        screenshot(EVIDENCE / "week4-application-insights-metrics.png", 17 * cm),
+        PageBreak(),
+        p("Bukti Azure - Alert Rules dan Action Group", "H1X"),
+        screenshot(EVIDENCE / "week4-alert-rules-action-group.png", 17 * cm),
+        PageBreak(),
+        p("Bukti Azure - Cosmos DB dan Blob Storage", "H1X"),
+        screenshot(EVIDENCE / "week4-cosmos-storage-backup.png", 17 * cm),
+        PageBreak(),
+        p("Bukti Azure - Security dan Cost Management", "H1X"),
+        screenshot(EVIDENCE / "week4-security-cost-management.png", 17 * cm),
     ]
     return story
 

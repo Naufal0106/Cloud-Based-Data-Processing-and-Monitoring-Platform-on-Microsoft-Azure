@@ -23,6 +23,10 @@ docs/laporan-mingguan/
 | Minggu 3 | Halaman register | `ui-register.png` |
 | Minggu 3 | Preview dashboard role user | `ui-user-preview.png` |
 | Minggu 3 | Preview dashboard role admin | `ui-admin-preview.png` |
+| Minggu 4 | Application Insights dan metrik Azure | `week4-application-insights-metrics.png` |
+| Minggu 4 | Azure Monitor alert rules dan action group | `week4-alert-rules-action-group.png` |
+| Minggu 4 | Cosmos DB backup policy dan Blob Storage | `week4-cosmos-storage-backup.png` |
+| Minggu 4 | Defender/Security pricing dan Cost Management usage | `week4-security-cost-management.png` |
 
 ## Bukti Console Yang Perlu Diambil Manual
 
@@ -38,11 +42,11 @@ Beberapa bukti harus diambil dari Azure Portal atau Cloudflare dashboard karena 
 | Minggu 3 | Blob container `raw-data` | Azure Portal > Storage Account > Containers | Jangan buka access key |
 | Minggu 3 | Azure Function App endpoint/status | Azure Portal > Function App | Jangan tampilkan function key |
 | Minggu 3 | Cloudflare Pages custom domain aktif | Cloudflare Pages > Custom domains | Jangan tampilkan token/API key |
-| Minggu 4 | Application Insights overview/request metrics | Azure Portal > Application Insights | Aman ditampilkan |
-| Minggu 4 | Alert rules dan action group | Azure Monitor > Alerts | Mask email notifikasi jika perlu |
-| Minggu 4 | Cost Management breakdown | Azure Portal > Cost Management | Aman jika nominal boleh dibagikan |
-| Minggu 4 | Defender for Cloud/Security recommendations | Azure Portal > Defender for Cloud | Hindari menampilkan ID tenant/subscription penuh |
-| Minggu 4 | Backup/recovery evidence | Cosmos DB/Storage export atau restore evidence | Jangan tampilkan secret |
+| Minggu 4 | Application Insights overview/request metrics | Azure Portal > Application Insights | Bukti CLI sudah tersedia, screenshot portal opsional |
+| Minggu 4 | Alert rules dan action group | Azure Monitor > Alerts | Bukti CLI sudah tersedia, mask email jika ambil portal |
+| Minggu 4 | Cost Management breakdown | Azure Portal > Cost Management | Bukti CLI usage tersedia, screenshot portal opsional |
+| Minggu 4 | Defender for Cloud/Security recommendations | Azure Portal > Defender for Cloud | Bukti CLI pricing tersedia, hindari ID tenant/subscription penuh |
+| Minggu 4 | Backup/recovery evidence | Cosmos DB/Storage export atau restore evidence | Bukti Cosmos backup policy dan Blob container sudah tersedia |
 
 ## Cara Menyimpan Screenshot Tambahan
 

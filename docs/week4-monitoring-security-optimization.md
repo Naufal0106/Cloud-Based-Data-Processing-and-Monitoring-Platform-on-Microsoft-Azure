@@ -151,15 +151,24 @@ Beberapa deliverable Minggu 4 tetap membutuhkan screenshot dari Azure Portal:
 
 Daftar nama file screenshot yang disarankan tersedia di `docs/evidence/README.md`.
 
+## Bukti Azure Yang Sudah Diambil
+
+| Bukti | File |
+| --- | --- |
+| Application Insights dan metrik Azure | `docs/evidence/week4-application-insights-metrics.png` |
+| Azure Monitor alert rules dan action group | `docs/evidence/week4-alert-rules-action-group.png` |
+| Cosmos DB backup policy dan Blob Storage | `docs/evidence/week4-cosmos-storage-backup.png` |
+| Defender/Security pricing dan Cost Management usage | `docs/evidence/week4-security-cost-management.png` |
+
 ## Status Minggu 4
 
 | Deliverable | Status |
 | --- | --- |
-| Dashboard monitoring | Application Insights tersedia; screenshot console perlu dilampirkan |
-| Alerting minimal 3 rule | Terraform `infra/monitoring.tf` disiapkan |
-| Security audit | Baseline dan temuan ditulis; screenshot Defender/Security Center perlu dilampirkan |
-| Backup dan recovery | Strategi dan simulasi tersedia; bukti recovery perlu dilampirkan |
-| Cost analysis | Breakdown dan optimasi awal tersedia; screenshot Cost Management perlu dilampirkan |
+| Dashboard monitoring | Application Insights tersedia dan bukti metrik sudah dilampirkan |
+| Alerting minimal 3 rule | 3 Azure Monitor alert rule sudah dibuat dan bukti sudah dilampirkan |
+| Security audit | Baseline ditulis dan bukti Defender/Security pricing sudah dilampirkan |
+| Backup dan recovery | Cosmos backup policy dan Blob container sudah dilampirkan |
+| Cost analysis | Cost usage CLI sudah dilampirkan; screenshot portal opsional jika butuh nominal |
 
 ## Kesimpulan
 
