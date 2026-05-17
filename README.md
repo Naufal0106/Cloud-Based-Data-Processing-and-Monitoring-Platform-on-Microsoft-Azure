@@ -288,6 +288,8 @@ Folder `infra` berisi konfigurasi Terraform untuk resource Azure:
 
 Bukti screenshot yang aman untuk laporan disimpan di `docs/evidence/`. Screenshot dari Azure Portal dan Cloudflare Portal perlu dicek ulang sebelum commit agar tidak memuat function key, token, access key, atau connection string.
 
+Laporan PDF rinci untuk roadmap Minggu 1-4 tersedia di `docs/Laporan_Minggu_1-4_Kelompok_11.pdf`.
+
 ## Deployment
 
 ### Backend ke Azure Functions

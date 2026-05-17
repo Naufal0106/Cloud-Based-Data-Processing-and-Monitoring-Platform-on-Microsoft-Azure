@@ -2,6 +2,12 @@
 
 Folder ini menyimpan bukti visual yang aman untuk dilampirkan pada laporan atau presentasi. Screenshot yang berisi secret, token, function key, connection string, atau detail nameserver tidak boleh dimasukkan ke repository.
 
+Laporan PDF rinci Minggu 1-4 tersedia di:
+
+```text
+docs/Laporan_Minggu_1-4_Kelompok_11.pdf
+```
+
 ## Bukti Yang Sudah Ada
 
 | Minggu | Bukti | File |
