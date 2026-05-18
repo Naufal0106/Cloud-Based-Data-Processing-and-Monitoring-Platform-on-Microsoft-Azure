@@ -2041,11 +2041,23 @@ def build_cloudflare_ops_summary() -> dict[str, Any]:
         },
     }
 
-    response = http_json(
-        "https://api.cloudflare.com/client/v4/graphql",
-        payload=payload,
-        headers={"Authorization": f"Bearer {token}"},
-    )
+    try:
+        response = http_json(
+            "https://api.cloudflare.com/client/v4/graphql",
+            payload=payload,
+            headers={"Authorization": f"Bearer {token}"},
+        )
+    except Exception as exc:
+        logging.warning("[Admin Ops] Gagal mengambil Cloudflare analytics: %s", exc)
+        return {
+            "configured": True,
+            "status": "error",
+            "message": "Cloudflare Analytics belum dapat diakses oleh backend.",
+            "detail": str(exc)[:180],
+            "totals": empty_cloudflare_totals(),
+            "daily": [],
+        }
+
     if response.get("errors"):
         return {
             "configured": True,
