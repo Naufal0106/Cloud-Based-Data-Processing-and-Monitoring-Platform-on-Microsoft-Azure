@@ -51,6 +51,10 @@ src/dashboard/env.js
 *credential*.json
 *secret*.json
 azureProfile.json
+secrets/*
+!secrets/.gitkeep
+!secrets/*.example.ps1
+!secrets/*.example.env
 
 # ===============================
 # Python / Azure Functions
