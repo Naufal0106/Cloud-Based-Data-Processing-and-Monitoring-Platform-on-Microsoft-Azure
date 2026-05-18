@@ -88,6 +88,22 @@ function cacheElements() {
     adminPanel: document.getElementById("admin-panel"),
     adminPanelTitle: document.getElementById("admin-panel-title"),
     adminPanelSubtitle: document.getElementById("admin-panel-subtitle"),
+    adminManagementGrid: document.getElementById("admin-management-grid"),
+    adminManagementLayout: document.getElementById("admin-management-layout"),
+    adminTotalUsers: document.getElementById("admin-total-users"),
+    adminTotalUsersSub: document.getElementById("admin-total-users-sub"),
+    adminActiveUsers: document.getElementById("admin-active-users"),
+    adminActiveUsersSub: document.getElementById("admin-active-users-sub"),
+    adminPrivilegedUsers: document.getElementById("admin-privileged-users"),
+    adminPrivilegedUsersSub: document.getElementById("admin-privileged-users-sub"),
+    adminTotalRecords: document.getElementById("admin-total-records"),
+    adminTotalRecordsSub: document.getElementById("admin-total-records-sub"),
+    adminDataIssues: document.getElementById("admin-data-issues"),
+    adminDataIssuesSub: document.getElementById("admin-data-issues-sub"),
+    adminGovernanceStatus: document.getElementById("admin-governance-status"),
+    adminGovernanceHealth: document.getElementById("admin-governance-health"),
+    adminDataStatus: document.getElementById("admin-data-status"),
+    adminDataHealth: document.getElementById("admin-data-health"),
     developerMetricsGrid: document.getElementById("developer-metrics-grid"),
     developerMonitoringLayout: document.getElementById("developer-monitoring-layout"),
     adminUsersSection: document.getElementById("admin-users-section"),
@@ -321,7 +337,7 @@ function showApp() {
   if (isDev()) {
     fetchDeveloperMonitoring();
   } else if (isAdmin()) {
-    fetchAdminUsers();
+    fetchAdminPanel();
   } else {
     fetchAll();
   }
@@ -348,14 +364,16 @@ function updateRoleUi() {
   const admin = isAdmin();
   const dev = isDev();
   el.adminPanel.hidden = !(admin || dev);
+  el.adminManagementGrid.hidden = !admin;
+  el.adminManagementLayout.hidden = !admin;
   el.developerMetricsGrid.hidden = !dev;
   el.developerMonitoringLayout.hidden = !dev;
   el.adminUsersSection.hidden = !admin;
-  el.adminPanelTitle.textContent = dev ? "Developer Monitoring" : "Admin Management";
+  el.adminPanelTitle.textContent = dev ? "Developer Monitoring" : "Admin Operations";
   el.adminPanelSubtitle.textContent = dev
     ? "CPU, memory, request rate, latency, error rate, dan centralized logging."
-    : "Kelola role user, developer, dan admin.";
-  el.btnAdminRefresh.textContent = dev ? "Reload Monitoring" : "Reload Users";
+    : "Pantau akses, role, data operasional, dan kontrol platform.";
+  el.btnAdminRefresh.textContent = dev ? "Reload Monitoring" : "Reload Admin";
   el.userStatsSection.hidden = admin || dev;
   el.userWorkbenchSection.hidden = admin || dev;
   el.sciencePanel.hidden = admin || dev;
@@ -368,12 +386,12 @@ function updateRoleUi() {
   el.pageTitle.textContent = dev
     ? "Developer Monitoring"
     : admin
-      ? "Admin Management"
+      ? "Admin Operations"
       : "Realtime Data Processing";
   el.pageSubtitle.textContent = dev
     ? "Pantau CPU, memory, request rate, latency, error rate, dan centralized logging Azure."
     : admin
-      ? "Kelola role dan akses user tanpa membuka fitur data processing."
+      ? "Kelola akses, role, dan ringkasan operasional tanpa fitur data processing."
     : "Frontend berjalan di Cloudflare Pages, backend dan data pipeline berjalan di Microsoft Azure.";
   if (!dev) {
     renderAdminOpsEmpty("Akses developer diperlukan");
@@ -386,7 +404,7 @@ function refreshRolePanel() {
     return;
   }
   if (isAdmin()) {
-    fetchAdminUsers();
+    fetchAdminPanel();
   }
 }
 
@@ -521,11 +539,32 @@ async function fetchAll() {
   if (isDev()) {
     await fetchDeveloperMonitoring();
   } else if (isAdmin()) {
-    await fetchAdminUsers();
+    await fetchAdminPanel();
   } else {
     await Promise.allSettled([fetchStats(), fetchData(), fetchAnalytics()]);
   }
   setBusy(false);
+}
+
+async function fetchAdminPanel() {
+  await Promise.allSettled([fetchAdminSummary(), fetchAdminUsers()]);
+}
+
+async function fetchAdminSummary() {
+  if (!isAdmin()) return;
+
+  if (state.isPreviewSession) {
+    renderAdminSummary(getPreviewAdminSummary());
+    return;
+  }
+
+  try {
+    const payload = await apiGet("management/summary");
+    renderAdminSummary(payload.summary || {});
+  } catch (error) {
+    renderAdminSummaryEmpty(`Gagal memuat ringkasan admin: ${error.message}`);
+    addLog("warn", `Admin summary gagal dimuat. ${error.message}`);
+  }
 }
 
 async function fetchStats() {
@@ -645,6 +684,61 @@ async function fetchAdminUsers() {
   } finally {
     el.btnAdminRefresh.disabled = false;
   }
+}
+
+function renderAdminSummary(summary = {}) {
+  const users = summary.users || {};
+  const telemetry = summary.telemetry || {};
+  const controls = summary.controls || {};
+  const privileged = toNumber(users.admin) + toNumber(users.dev);
+  const issues = toNumber(telemetry.anomaly) + toNumber(telemetry.error);
+
+  el.adminTotalUsers.textContent = formatCompact(users.total);
+  el.adminActiveUsers.textContent = formatCompact(users.recent_login);
+  el.adminPrivilegedUsers.textContent = formatCompact(privileged);
+  el.adminTotalRecords.textContent = formatCompact(telemetry.total);
+  el.adminDataIssues.textContent = formatCompact(issues);
+
+  el.adminTotalUsersSub.textContent = `${formatCompact(users.regular)} user biasa`;
+  el.adminActiveUsersSub.textContent = "Login 7 hari terakhir";
+  el.adminPrivilegedUsersSub.textContent = `${formatCompact(users.admin)} admin, ${formatCompact(users.dev)} dev`;
+  el.adminTotalRecordsSub.textContent = `${formatCompact(telemetry.processed)} processed`;
+  el.adminDataIssuesSub.textContent = `${formatCompact(telemetry.anomaly)} anomaly, ${formatCompact(telemetry.error)} error`;
+
+  el.adminGovernanceStatus.textContent = "Ready";
+  el.adminDataStatus.textContent = "Ready";
+  el.adminGovernanceHealth.innerHTML = [
+    { label: "Register publik", value: `Role ${controls.public_register_role || "user"}`, tone: "ready" },
+    { label: "Admin self-demotion guard", value: controls.admin_role_protected ? "Aktif" : "Perlu cek", tone: controls.admin_role_protected ? "ready" : "warn" },
+    { label: "User data scope", value: controls.user_data_scoped ? "Per akun" : "Global", tone: controls.user_data_scoped ? "ready" : "warn" },
+    { label: "Management API", value: controls.management_route || "/api/management", tone: "ready" },
+  ].map(renderOpsHealthRow).join("");
+
+  el.adminDataHealth.innerHTML = [
+    { label: "Processed", value: formatCompact(telemetry.processed), tone: "ready" },
+    { label: "Anomaly", value: formatCompact(telemetry.anomaly), tone: toNumber(telemetry.anomaly) > 0 ? "warn" : "ready" },
+    { label: "Error", value: formatCompact(telemetry.error), tone: toNumber(telemetry.error) > 0 ? "warn" : "ready" },
+    { label: "Issue ratio", value: formatPercent(toNumber(telemetry.total) ? (issues / toNumber(telemetry.total)) * 100 : 0), tone: issues > 0 ? "warn" : "ready" },
+  ].map(renderOpsHealthRow).join("");
+
+  addLog("success", "Admin operations tersinkron dari Azure Cosmos DB.");
+}
+
+function renderAdminSummaryEmpty(message) {
+  el.adminTotalUsers.textContent = "-";
+  el.adminActiveUsers.textContent = "-";
+  el.adminPrivilegedUsers.textContent = "-";
+  el.adminTotalRecords.textContent = "-";
+  el.adminDataIssues.textContent = "-";
+  el.adminTotalUsersSub.textContent = message;
+  el.adminActiveUsersSub.textContent = "Login activity";
+  el.adminPrivilegedUsersSub.textContent = "Admin + developer";
+  el.adminTotalRecordsSub.textContent = "Cosmos DB";
+  el.adminDataIssuesSub.textContent = "Anomaly + error";
+  el.adminGovernanceStatus.textContent = "-";
+  el.adminDataStatus.textContent = "-";
+  el.adminGovernanceHealth.innerHTML = renderOpsHealthRow({ label: message, value: "-", tone: "warn" });
+  el.adminDataHealth.innerHTML = renderOpsHealthRow({ label: "Data operations", value: "-", tone: "warn" });
 }
 
 function renderAdminOps(payload = {}) {
@@ -817,13 +911,17 @@ function renderAdminOpsHealth(azure, cloudflare) {
   ];
 
   el.adminOpsHealth.innerHTML = rows
-    .map((row) => `
-      <div class="ops-health-item ops-${safeToken(row.tone || "unknown")}">
-        <span>${escapeHtml(row.label)}</span>
-        <strong>${escapeHtml(row.value)}</strong>
-      </div>
-    `)
+    .map(renderOpsHealthRow)
     .join("");
+}
+
+function renderOpsHealthRow(row) {
+  return `
+    <div class="ops-health-item ops-${safeToken(row.tone || "unknown")}">
+      <span>${escapeHtml(row.label)}</span>
+      <strong>${escapeHtml(row.value)}</strong>
+    </div>
+  `;
 }
 
 function renderAdminUsers(users) {
@@ -896,11 +994,11 @@ async function handleAdminUserAction(event) {
     });
     showToast(payload.message || "Role user diperbarui.", "success");
     addLog("success", `Role ${payload.user?.email || "user"} menjadi ${payload.user?.role}.`);
-    fetchAdminUsers();
+    fetchAdminPanel();
   } catch (error) {
     showToast(`Gagal update role: ${error.message}`, "error");
     addLog("error", `Update role gagal: ${error.message}`);
-    fetchAdminUsers();
+    fetchAdminPanel();
   }
 }
 
@@ -1514,6 +1612,33 @@ function getPreviewUsers() {
       last_login_at: "",
     },
   ];
+}
+
+function getPreviewAdminSummary() {
+  const users = getPreviewUsers();
+  const telemetry = getPreviewData();
+  const countStatus = (status) => telemetry.filter((item) => item.status === status).length;
+  return {
+    users: {
+      total: users.length,
+      admin: users.filter((item) => item.role === "admin").length,
+      dev: users.filter((item) => item.role === "dev").length,
+      regular: users.filter((item) => item.role === "user").length,
+      recent_login: users.filter((item) => item.last_login_at).length,
+    },
+    telemetry: {
+      total: telemetry.length,
+      processed: countStatus("processed"),
+      anomaly: countStatus("anomaly"),
+      error: countStatus("error"),
+    },
+    controls: {
+      public_register_role: "user",
+      admin_role_protected: true,
+      user_data_scoped: true,
+      management_route: "/api/management",
+    },
+  };
 }
 
 function nextRoleFor(role) {

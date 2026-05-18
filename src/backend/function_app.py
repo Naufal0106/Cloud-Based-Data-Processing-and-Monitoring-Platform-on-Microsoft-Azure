@@ -451,6 +451,49 @@ def list_admin_users(req: func.HttpRequest) -> func.HttpResponse:
         return error_response("Gagal mengambil daftar user")
 
 
+@app.route(route="management/summary", methods=["GET"], auth_level=func.AuthLevel.FUNCTION)
+def get_management_summary(req: func.HttpRequest) -> func.HttpResponse:
+    _, auth_error = require_role(req, {ADMIN_ROLE})
+    if auth_error:
+        return auth_error
+
+    try:
+        users_container = get_users_container()
+        data_container = get_cosmos_container()
+        recent_cutoff = (datetime.now(timezone.utc) - timedelta(days=7)).isoformat()
+
+        summary = {
+            "users": {
+                "total": count_items(users_container, "c.doc_type = 'user'"),
+                "admin": count_items(users_container, "c.doc_type = 'user' AND c.role = @role", [{"name": "@role", "value": ADMIN_ROLE}]),
+                "dev": count_items(users_container, "c.doc_type = 'user' AND c.role = @role", [{"name": "@role", "value": DEV_ROLE}]),
+                "regular": count_items(users_container, "c.doc_type = 'user' AND c.role = @role", [{"name": "@role", "value": DEFAULT_USER_ROLE}]),
+                "recent_login": count_items(
+                    users_container,
+                    "c.doc_type = 'user' AND IS_DEFINED(c.last_login_at) AND c.last_login_at >= @cutoff",
+                    [{"name": "@cutoff", "value": recent_cutoff}],
+                ),
+            },
+            "telemetry": {
+                "total": count_items(data_container, TELEMETRY_FILTER),
+                "processed": count_items(data_container, f"{TELEMETRY_FILTER} AND c.status = @status", [{"name": "@status", "value": "processed"}]),
+                "anomaly": count_items(data_container, f"{TELEMETRY_FILTER} AND c.status = @status", [{"name": "@status", "value": "anomaly"}]),
+                "error": count_items(data_container, f"{TELEMETRY_FILTER} AND c.status = @status", [{"name": "@status", "value": "error"}]),
+            },
+            "controls": {
+                "public_register_role": DEFAULT_USER_ROLE,
+                "admin_role_protected": True,
+                "user_data_scoped": True,
+                "management_route": "/api/management",
+            },
+            "generated_at": datetime.now(timezone.utc).isoformat(),
+        }
+        return json_response({"success": True, "summary": summary})
+    except Exception:
+        logging.exception("[GET /management/summary] Error")
+        return error_response("Gagal mengambil ringkasan admin")
+
+
 @app.route(
     route="management/users/{user_id}/role",
     methods=["PATCH", "POST"],

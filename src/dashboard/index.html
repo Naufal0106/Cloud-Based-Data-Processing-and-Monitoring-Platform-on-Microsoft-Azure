@@ -11,7 +11,7 @@
       rel="stylesheet"
     />
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-    <link rel="stylesheet" href="style.css?v=20260518-admin-route-fix" />
+    <link rel="stylesheet" href="style.css?v=20260518-admin-ops" />
   </head>
   <body>
     <section class="auth-screen" id="auth-screen">
@@ -144,6 +144,68 @@
           <button class="btn btn-secondary btn-sm" id="btnAdminRefresh" type="button">
             Reload Admin
           </button>
+        </div>
+
+        <div class="admin-ops-grid admin-management-grid" id="admin-management-grid" aria-label="Ringkasan administrasi" hidden>
+          <article class="ops-card accent-blue">
+            <span class="ops-label">Total Users</span>
+            <strong id="admin-total-users">-</strong>
+            <small id="admin-total-users-sub">Akun terdaftar</small>
+          </article>
+          <article class="ops-card accent-green">
+            <span class="ops-label">Active Users</span>
+            <strong id="admin-active-users">-</strong>
+            <small id="admin-active-users-sub">Login 7 hari terakhir</small>
+          </article>
+          <article class="ops-card accent-amber">
+            <span class="ops-label">Privileged Roles</span>
+            <strong id="admin-privileged-users">-</strong>
+            <small id="admin-privileged-users-sub">Admin + developer</small>
+          </article>
+          <article class="ops-card accent-blue">
+            <span class="ops-label">Data Records</span>
+            <strong id="admin-total-records">-</strong>
+            <small id="admin-total-records-sub">Cosmos DB telemetry</small>
+          </article>
+          <article class="ops-card accent-red">
+            <span class="ops-label">Data Issues</span>
+            <strong id="admin-data-issues">-</strong>
+            <small id="admin-data-issues-sub">Anomaly + error</small>
+          </article>
+        </div>
+
+        <div class="admin-ops-layout" id="admin-management-layout" hidden>
+          <article class="ops-section">
+            <div class="ops-section-header">
+              <div>
+                <h3>Access Governance</h3>
+                <p>Ringkasan role dan kontrol akses platform.</p>
+              </div>
+              <span class="mono panel-meta" id="admin-governance-status">-</span>
+            </div>
+            <div class="ops-health-list" id="admin-governance-health">
+              <div class="ops-health-item">
+                <span>Menunggu data admin...</span>
+                <strong>-</strong>
+              </div>
+            </div>
+          </article>
+
+          <article class="ops-section">
+            <div class="ops-section-header">
+              <div>
+                <h3>Data Operations</h3>
+                <p>Status data yang masuk, diproses, dan bermasalah.</p>
+              </div>
+              <span class="mono panel-meta" id="admin-data-status">-</span>
+            </div>
+            <div class="ops-health-list" id="admin-data-health">
+              <div class="ops-health-item">
+                <span>Menunggu data operasional...</span>
+                <strong>-</strong>
+              </div>
+            </div>
+          </article>
         </div>
 
         <div class="admin-ops-grid developer-metrics-grid" id="developer-metrics-grid" aria-label="Ringkasan monitoring developer">
@@ -461,7 +523,7 @@
       (function loadConfigAndApp() {
         function loadApp() {
           const appScript = document.createElement("script");
-          appScript.src = "script.js?v=20260518-admin-route-fix";
+          appScript.src = "script.js?v=20260518-admin-ops";
           document.body.appendChild(appScript);
         }
 
