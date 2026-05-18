@@ -22,10 +22,8 @@ override.tf.json
 *.tfvars
 *.tfvars.json
 
-# Terraform source for this project is kept out of the public repo.
-infra/*.tf
-infra/*.tf.json
-infra/.terraform.lock.hcl
+# Terraform source and provider lock file are committed as IaC evidence.
+# Keep secret values in *.tfvars and state/plan files only; those stay ignored above.
 
 # ===============================
 # Secrets / Credentials

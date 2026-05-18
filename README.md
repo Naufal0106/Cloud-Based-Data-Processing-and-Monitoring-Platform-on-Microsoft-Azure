@@ -182,8 +182,10 @@ Data telemetry di dashboard dibatasi berdasarkan akun login. Role `user` hanya m
 |   |-- week3-core-services.md
 |   `-- week4-monitoring-security-optimization.md
 |-- infra/
+|   |-- README.md
 |   |-- backend.tf
 |   |-- database.tf
+|   |-- evidence.tf
 |   |-- functions.tf
 |   |-- iam.tf
 |   |-- locals.tf
@@ -277,6 +279,8 @@ Folder `infra` berisi konfigurasi Terraform untuk resource Azure:
 - NSG untuk subnet publik dan privat
 - RBAC/IAM untuk anggota tim
 
+File Terraform di folder `infra` ikut dicommit sebagai bukti program/IaC. Nilai sensitif tetap tidak dicommit; gunakan `.tfvars` lokal atau environment variable saat menjalankan Terraform.
+
 ## Kesesuaian Roadmap Minggu 1-4
 
 | Minggu | Fokus Roadmap | Bukti di Project | Status |
@@ -284,7 +288,7 @@ Folder `infra` berisi konfigurasi Terraform untuk resource Azure:
 | 1 | Perencanaan dan arsitektur | `docs/week1-planning.md`, `docs/architecture-notes.md`, `arch/arsitektur_final-target.png` | Selesai |
 | 2 | Infrastruktur dasar, jaringan, IAM, IaC | `infra/`, `docs/week2-infrastructure.md`, `docs/iam-config.md`, `docs/resource-inventory.md` | Selesai |
 | 3 | Layanan inti end-to-end | `src/backend/`, `src/dashboard/`, `functions/api/`, `docs/week3-core-services.md` | Selesai |
-| 4 | Monitoring, keamanan, backup, optimasi biaya | `infra/monitoring.tf`, `docs/week4-monitoring-security-optimization.md` | Baseline selesai, screenshot Azure Portal perlu dilampirkan saat pengumpulan |
+| 4 | Monitoring, keamanan, backup, optimasi biaya | `infra/monitoring.tf`, `infra/evidence.tf`, `docs/week4-monitoring-security-optimization.md`, `docs/evidence/` | Selesai |
 
 Bukti screenshot yang aman untuk laporan disimpan di `docs/evidence/`. Screenshot dari Azure Portal dan Cloudflare Portal perlu dicek ulang sebelum commit agar tidak memuat function key, token, access key, atau connection string.
 
