@@ -74,8 +74,8 @@ Endpoint utama:
 | GET | `/api/stats` | Statistik data |
 | GET | `/api/data` | Data terbaru |
 | POST | `/api/upload` | Upload file data |
-| GET | `/api/admin/users` | Admin-only daftar user |
-| PATCH/POST | `/api/admin/users/{user_id}/role` | Admin-only update role |
+| GET | `/api/management/users` | Admin-only daftar user |
+| PATCH/POST | `/api/management/users/{user_id}/role` | Admin-only update role |
 
 ### Upload CSV dan Excel
 

@@ -419,7 +419,7 @@ def get_current_user(req: func.HttpRequest) -> func.HttpResponse:
     )
 
 
-@app.route(route="admin/users", methods=["GET"], auth_level=func.AuthLevel.FUNCTION)
+@app.route(route="management/users", methods=["GET"], auth_level=func.AuthLevel.FUNCTION)
 def list_admin_users(req: func.HttpRequest) -> func.HttpResponse:
     _, auth_error = require_role(req, {ADMIN_ROLE})
     if auth_error:
@@ -447,12 +447,12 @@ def list_admin_users(req: func.HttpRequest) -> func.HttpResponse:
             }
         )
     except Exception:
-        logging.exception("[GET /admin/users] Error")
+        logging.exception("[GET /management/users] Error")
         return error_response("Gagal mengambil daftar user")
 
 
 @app.route(
-    route="admin/users/{user_id}/role",
+    route="management/users/{user_id}/role",
     methods=["PATCH", "POST"],
     auth_level=func.AuthLevel.FUNCTION,
 )
@@ -492,7 +492,7 @@ def update_admin_user_role(req: func.HttpRequest) -> func.HttpResponse:
             }
         )
     except Exception:
-        logging.exception("[PATCH /admin/users/{user_id}/role] Error")
+        logging.exception("[PATCH /management/users/{user_id}/role] Error")
         return error_response("Gagal memperbarui role user")
 
 
@@ -505,7 +505,7 @@ def get_dev_ops_summary(req: func.HttpRequest) -> func.HttpResponse:
     return build_ops_summary_response()
 
 
-@app.route(route="admin/ops-summary", methods=["GET"], auth_level=func.AuthLevel.FUNCTION)
+@app.route(route="management/ops-summary", methods=["GET"], auth_level=func.AuthLevel.FUNCTION)
 def get_admin_ops_summary(req: func.HttpRequest) -> func.HttpResponse:
     _, auth_error = require_role(req, {ADMIN_ROLE, DEV_ROLE})
     if auth_error:

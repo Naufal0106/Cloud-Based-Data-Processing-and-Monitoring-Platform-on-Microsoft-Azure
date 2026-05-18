@@ -63,8 +63,8 @@ Backend berada di `src/backend/function_app.py` dan berjalan sebagai Azure Funct
 | POST | `/api/upload` | Upload JSON, CSV, XLSX, atau XLS |
 | POST | `/api/upload?clean=true` | Cleaning otomatis sebelum simpan |
 | GET | `/api/analytics` | Profiling, quality report, dan chart dari data tersimpan |
-| GET | `/api/admin/users` | Admin-only daftar user |
-| PATCH/POST | `/api/admin/users/{user_id}/role` | Admin-only update role user |
+| GET | `/api/management/users` | Admin-only daftar user |
+| PATCH/POST | `/api/management/users/{user_id}/role` | Admin-only update role user |
 
 ## Alur End-to-End
 

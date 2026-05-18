@@ -93,10 +93,10 @@ Frontend tidak memanggil Azure Functions secara langsung. Dashboard memanggil en
 | POST | `/api/analyze` | Menganalisis file upload tanpa menyimpan data |
 | POST | `/api/upload` | Upload JSON, CSV, XLSX, atau XLS langsung untuk diproses |
 | POST | `/api/upload?clean=true` | Membersihkan data otomatis sebelum diproses dan disimpan |
-| GET | `/api/admin/users` | Admin-only: melihat daftar user |
-| PATCH/POST | `/api/admin/users/{user_id}/role` | Admin-only: mengubah role user |
+| GET | `/api/management/users` | Admin-only: melihat daftar user |
+| PATCH/POST | `/api/management/users/{user_id}/role` | Admin-only: mengubah role user |
 | GET | `/api/dev/ops-summary` | Dev/admin-only: ringkasan Azure Monitor dan Cloudflare workload |
-| GET | `/api/admin/ops-summary` | Alias kompatibilitas untuk ringkasan monitoring |
+| GET | `/api/management/ops-summary` | Dev/admin-only: alias ringkasan monitoring |
 
 Endpoint `stats`, `data`, dan `upload` di Azure tetap menggunakan `auth_level=FUNCTION`, tetapi function key tidak disimpan di frontend.
 

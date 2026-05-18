@@ -70,8 +70,8 @@ Dokumen ini mendata resource yang digunakan pada platform data processing dan mo
 | GET | `/api/stats` | Statistik total, processed, anomaly, dan error |
 | GET | `/api/data` | Data terbaru |
 | POST | `/api/upload` | Upload JSON, CSV, XLSX, atau XLS langsung |
-| GET | `/api/admin/users` | Admin-only daftar user |
-| PATCH/POST | `/api/admin/users/{user_id}/role` | Admin-only update role |
+| GET | `/api/management/users` | Admin-only daftar user |
+| PATCH/POST | `/api/management/users/{user_id}/role` | Admin-only update role |
 
 ## Catatan Operasional
 

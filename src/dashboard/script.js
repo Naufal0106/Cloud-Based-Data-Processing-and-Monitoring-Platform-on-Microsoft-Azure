@@ -633,7 +633,7 @@ async function fetchAdminUsers() {
 
   try {
     el.btnAdminRefresh.disabled = true;
-    const payload = await apiGet("admin/users");
+    const payload = await apiGet("management/users");
     renderAdminUsers(Array.isArray(payload.users) ? payload.users : []);
   } catch (error) {
     el.adminUsersBody.innerHTML = `
@@ -891,7 +891,7 @@ async function handleAdminUserAction(event) {
   try {
     button.disabled = true;
     button.textContent = "Menyimpan...";
-    const payload = await apiPost(`admin/users/${encodeURIComponent(userId)}/role`, {
+    const payload = await apiPost(`management/users/${encodeURIComponent(userId)}/role`, {
       role: nextRole,
     });
     showToast(payload.message || "Role user diperbarui.", "success");
