@@ -208,8 +208,6 @@ Data telemetry di dashboard dibatasi berdasarkan akun login. Role `user` hanya m
 |-- functions/
 |   `-- api/
 |       `-- [[path]].js
-|-- scripts/
-|   `-- test-auth-db.ps1
 |-- .gitignore
 `-- README.md
 ```

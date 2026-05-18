@@ -95,6 +95,9 @@ tmp/
 */temp/
 */tmp/
 
+# Local helper scripts are kept on developer machines only.
+scripts/
+
 # ===============================
 # Editor / IDE
 # ===============================

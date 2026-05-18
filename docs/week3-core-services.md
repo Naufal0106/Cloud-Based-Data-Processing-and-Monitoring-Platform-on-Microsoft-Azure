@@ -108,11 +108,7 @@ Alur utama:
 | 5 | Analisis data | Quality score, profiling, dan chart dikembalikan tanpa menyimpan | Siap uji |
 | 6 | Admin melihat user | Hanya role `admin` yang dapat membuka endpoint admin | Siap uji |
 
-Script pengujian API:
-
-```powershell
-powershell -ExecutionPolicy Bypass -File scripts\test-auth-db.ps1
-```
+Pengujian API dilakukan melalui endpoint Cloudflare Pages proxy `/api` menggunakan UI dashboard, Postman, atau PowerShell `Invoke-RestMethod`. Helper script lokal tidak disimpan di repository publik.
 
 ## Bukti Screenshot
 

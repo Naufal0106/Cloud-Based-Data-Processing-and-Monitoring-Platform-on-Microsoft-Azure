@@ -191,13 +191,7 @@ Mode preview ini hanya aktif pada `localhost` atau `127.0.0.1`, sehingga tidak m
 
 ### Test login/register dan database
 
-Setelah Cloudflare Pages Function aktif dan SSL custom domain sudah valid, jalankan:
-
-```powershell
-powershell -ExecutionPolicy Bypass -File scripts/test-auth-db.ps1
-```
-
-Default script akan menguji:
+Setelah Cloudflare Pages Function aktif dan SSL custom domain sudah valid, uji endpoint proxy:
 
 ```text
 https://kelompok11cc.my.id/api
@@ -209,13 +203,12 @@ Yang diuji:
 - `POST /api/login`
 - `GET /api/me`
 - `GET /api/stats`
-- `POST /api/upload` memakai CSV multipart yang dibuat otomatis oleh script
+- `POST /api/upload` memakai file CSV/Excel/JSON lokal
 
 Jika ingin memakai base URL lain:
 
-```powershell
-$env:APP_API_BASE="https://<cloudflare-pages-preview>.pages.dev/api"
-powershell -ExecutionPolicy Bypass -File scripts/test-auth-db.ps1
+```text
+https://<cloudflare-pages-preview>.pages.dev/api
 ```
 
 Jika muncul error SSL/TLS, pastikan custom domain Cloudflare Pages sudah aktif dan sertifikat SSL sudah selesai provisioning.

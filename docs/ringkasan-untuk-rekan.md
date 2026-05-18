@@ -321,26 +321,21 @@ Untuk test upload UI, gunakan file JSON/CSV/Excel lokal. Sample data bawaan seng
 
 ### Test Backend dan Database
 
-Setelah Cloudflare Pages Function aktif dan domain SSL sudah valid, jalankan:
+Setelah Cloudflare Pages Function aktif dan domain SSL sudah valid, uji endpoint proxy `/api` melalui dashboard, Postman, atau PowerShell `Invoke-RestMethod`.
 
-```powershell
-powershell -ExecutionPolicy Bypass -File scripts\test-auth-db.ps1
-```
-
-Script ini mengetes:
+Yang perlu dites:
 
 - Register user.
 - Login user.
 - Ambil profil user.
 - Ambil statistik.
-- Upload sample CSV.
+- Upload file CSV/Excel/JSON lokal.
 - Simpan data ke Cosmos DB.
 
 Jika ingin test lewat preview Cloudflare:
 
-```powershell
-$env:APP_API_BASE="https://<cloudflare-pages-preview>.pages.dev/api"
-powershell -ExecutionPolicy Bypass -File scripts\test-auth-db.ps1
+```text
+https://<cloudflare-pages-preview>.pages.dev/api
 ```
 
 ## 8. Catatan Deployment
@@ -375,7 +370,6 @@ AGENTS.md
 docs/deployment-guide.md
 docs/ringkasan-untuk-rekan.md
 functions/api/[[path]].js
-scripts/test-auth-db.ps1
 src/dashboard/env.example.js
 ```
 
