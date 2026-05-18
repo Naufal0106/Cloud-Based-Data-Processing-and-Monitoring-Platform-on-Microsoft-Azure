@@ -1990,6 +1990,8 @@ def build_azure_ops_summary() -> dict[str, Any]:
     for resource in resources:
         results.append(fetch_azure_metric_group(resource, token))
 
+    results = merge_app_insights_summary(results)
+
     return {
         "configured": True,
         "status": "ready",
@@ -2205,6 +2207,174 @@ def summarize_azure_metrics(resources: list[dict[str, Any]]) -> dict[str, Any]:
         "cosmos_requests": cosmos_requests,
         "cosmos_availability": availability,
     }
+
+
+def merge_app_insights_summary(resources: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    app_id = optional_env("APPINSIGHTS_APP_ID")
+    api_key = optional_env("APPINSIGHTS_API_KEY")
+    if not app_id or not api_key:
+        return resources
+
+    try:
+        summary = fetch_app_insights_summary(app_id, api_key)
+    except Exception as exc:
+        logging.warning("[Admin Ops] Gagal mengambil Application Insights summary: %s", exc)
+        return resources
+
+    merged = list(resources)
+    function_resource = next(
+        (resource for resource in merged if resource.get("key") == "function"),
+        None,
+    )
+    if not function_resource:
+        return merged
+
+    function_resource["status"] = "ready"
+    function_resource["message"] = "Fallback Application Insights API"
+    metrics = function_resource.setdefault("metrics", {})
+    metrics["Requests"] = {
+        "display_name": "Requests",
+        "unit": "Count",
+        "latest": summary["requests_points"][-1]["value"] if summary["requests_points"] else 0,
+        "total": summary["requests"],
+        "average": summary["request_rate_per_hour"],
+        "points": summary["requests_points"],
+    }
+    metrics["Http5xx"] = {
+        "display_name": "HTTP 5xx",
+        "unit": "Count",
+        "latest": summary["error_points"][-1]["value"] if summary["error_points"] else 0,
+        "total": summary["errors"],
+        "average": summary["errors"] / 24 if summary["errors"] else 0,
+        "points": summary["error_points"],
+    }
+    metrics["AverageResponseTime"] = {
+        "display_name": "Average response time",
+        "unit": "Seconds",
+        "latest": summary["avg_duration_seconds"],
+        "total": summary["avg_duration_seconds"],
+        "average": summary["avg_duration_seconds"],
+        "points": [
+            {
+                "time": datetime.now(timezone.utc).isoformat(),
+                "value": summary["avg_duration_seconds"],
+            }
+        ],
+    }
+    metrics["Percentage CPU"] = {
+        "display_name": "Process CPU",
+        "unit": "Percent",
+        "latest": summary["cpu_percent"],
+        "total": summary["cpu_percent"],
+        "average": summary["cpu_percent"],
+        "points": [
+            {
+                "time": datetime.now(timezone.utc).isoformat(),
+                "value": summary["cpu_percent"],
+            }
+        ],
+    }
+    metrics["MemoryWorkingSet"] = {
+        "display_name": "Private bytes",
+        "unit": "Bytes",
+        "latest": summary["memory_private_bytes"],
+        "total": summary["memory_private_bytes"],
+        "average": summary["memory_private_bytes"],
+        "points": [
+            {
+                "time": datetime.now(timezone.utc).isoformat(),
+                "value": summary["memory_private_bytes"],
+            }
+        ],
+    }
+    return merged
+
+
+def fetch_app_insights_summary(app_id: str, api_key: str) -> dict[str, Any]:
+    query = """
+    requests
+    | where timestamp > ago(24h)
+    | summarize requests=count(), errors=countif(tolong(resultCode) >= 500), avgDurationMs=avg(duration)
+    """
+    summary = app_insights_query(app_id, api_key, query)
+    row = first_app_insights_row(summary)
+    requests = int(first_number_from_row(row, 0) or 0)
+    errors = int(first_number_from_row(row, 1) or 0)
+    avg_duration_ms = first_number_from_row(row, 2) or 0
+
+    series_query = """
+    requests
+    | where timestamp > ago(24h)
+    | summarize requests=count(), errors=countif(tolong(resultCode) >= 500) by bin(timestamp, 1h)
+    | order by timestamp asc
+    """
+    series = app_insights_query(app_id, api_key, series_query)
+    requests_points = []
+    error_points = []
+    for series_row in app_insights_rows(series):
+        timestamp = series_row[0] if len(series_row) > 0 else None
+        requests_value = first_number_from_row(series_row, 1) or 0
+        errors_value = first_number_from_row(series_row, 2) or 0
+        requests_points.append({"time": timestamp, "value": requests_value})
+        error_points.append({"time": timestamp, "value": errors_value})
+
+    performance_query = """
+    performanceCounters
+    | where timestamp > ago(24h)
+    | where category == "Process" and counter in ("% Processor Time Normalized", "Private Bytes")
+    | summarize avgValue=avg(value) by counter
+    """
+    performance = app_insights_query(app_id, api_key, performance_query)
+    cpu_percent = 0
+    memory_private_bytes = 0
+    for performance_row in app_insights_rows(performance):
+        counter = str(performance_row[0] if performance_row else "")
+        value = first_number_from_row(performance_row, 1) or 0
+        if counter == "% Processor Time Normalized":
+            cpu_percent = round(value, 3)
+        elif counter == "Private Bytes":
+            memory_private_bytes = round(value, 3)
+
+    return {
+        "requests": requests,
+        "errors": errors,
+        "avg_duration_seconds": round(avg_duration_ms / 1000, 3) if avg_duration_ms else 0,
+        "request_rate_per_hour": round(requests / 24, 3) if requests else 0,
+        "requests_points": requests_points[-24:],
+        "error_points": error_points[-24:],
+        "cpu_percent": cpu_percent,
+        "memory_private_bytes": memory_private_bytes,
+    }
+
+
+def app_insights_query(app_id: str, api_key: str, query: str) -> dict[str, Any]:
+    return http_json(
+        f"https://api.applicationinsights.io/v1/apps/{app_id}/query",
+        payload={"query": query},
+        headers={"x-api-key": api_key},
+    )
+
+
+def first_app_insights_row(payload: dict[str, Any]) -> list[Any]:
+    rows = app_insights_rows(payload)
+    return rows[0] if rows else []
+
+
+def app_insights_rows(payload: dict[str, Any]) -> list[list[Any]]:
+    tables = payload.get("tables") or []
+    if not tables:
+        return []
+    rows = tables[0].get("rows") or []
+    return rows if isinstance(rows, list) else []
+
+
+def first_number_from_row(row: list[Any], index: int) -> float | None:
+    if len(row) <= index:
+        return None
+    value = row[index]
+    if isinstance(value, (int, float)) and math.isfinite(float(value)):
+        return float(value)
+    return None
 
 
 def normalize_cloudflare_day(item: dict[str, Any]) -> dict[str, Any]:
