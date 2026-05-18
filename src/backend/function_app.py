@@ -12,10 +12,12 @@ import secrets
 import time
 import uuid
 from collections import Counter
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from email.parser import BytesParser
 from email.policy import default as email_policy
 from typing import Any
+from urllib.error import HTTPError, URLError
+from urllib.request import Request, urlopen
 
 import azure.functions as func
 from azure.cosmos import CosmosClient
@@ -491,6 +493,22 @@ def update_admin_user_role(req: func.HttpRequest) -> func.HttpResponse:
     except Exception:
         logging.exception("[PATCH /admin/users/{user_id}/role] Error")
         return error_response("Gagal memperbarui role user")
+
+
+@app.route(route="admin/ops-summary", methods=["GET"], auth_level=func.AuthLevel.FUNCTION)
+def get_admin_ops_summary(req: func.HttpRequest) -> func.HttpResponse:
+    _, auth_error = require_role(req, {ADMIN_ROLE})
+    if auth_error:
+        return auth_error
+
+    return json_response(
+        {
+            "success": True,
+            "generated_at": datetime.now(timezone.utc).isoformat(),
+            "azure": build_azure_ops_summary(),
+            "cloudflare": build_cloudflare_ops_summary(),
+        }
+    )
 
 
 @app.route(route="hello", methods=["GET"], auth_level=func.AuthLevel.ANONYMOUS)
@@ -1880,6 +1898,401 @@ def validate_role(raw_role: Any) -> str:
     return role
 
 
+def build_azure_ops_summary() -> dict[str, Any]:
+    subscription_id = optional_env("AZURE_SUBSCRIPTION_ID")
+    resource_group = optional_env("AZURE_RESOURCE_GROUP", "RG-Kelompok11")
+    function_name = optional_env("AZURE_FUNCTION_APP_NAME", "func-backend-monitoring-k11")
+    storage_name = optional_env("AZURE_STORAGE_ACCOUNT_NAME", "stfuncmonitoringk11")
+    cosmos_name = optional_env("AZURE_COSMOS_ACCOUNT_NAME", "cosmos-kelompok11-monitoring")
+    vm_name = optional_env("AZURE_VM_NAME", "VM-Web-Kelompok11")
+
+    resources = [
+        {
+            "key": "function",
+            "label": "Azure Functions",
+            "resource_id": azure_resource_id(
+                subscription_id,
+                resource_group,
+                "Microsoft.Web",
+                "sites",
+                function_name,
+            ),
+            "metricnames": "Requests,Http5xx,AverageResponseTime,CpuTime,MemoryWorkingSet",
+            "aggregation": "Total,Average",
+        },
+        {
+            "key": "vm",
+            "label": "Developer VM",
+            "resource_id": azure_resource_id(
+                subscription_id,
+                resource_group,
+                "Microsoft.Compute",
+                "virtualMachines",
+                vm_name,
+            ),
+            "metricnames": "Percentage CPU,Available Memory Bytes",
+            "aggregation": "Average",
+        },
+        {
+            "key": "storage",
+            "label": "Blob Storage",
+            "resource_id": azure_resource_id(
+                subscription_id,
+                resource_group,
+                "Microsoft.Storage",
+                "storageAccounts",
+                storage_name,
+            ),
+            "metricnames": "Transactions,UsedCapacity",
+            "aggregation": "Total,Average",
+        },
+        {
+            "key": "cosmos",
+            "label": "Cosmos DB",
+            "resource_id": azure_resource_id(
+                subscription_id,
+                resource_group,
+                "Microsoft.DocumentDB",
+                "databaseAccounts",
+                cosmos_name,
+            ),
+            "metricnames": "TotalRequests,ServiceAvailability",
+            "aggregation": "Total,Average",
+        },
+    ]
+
+    if not subscription_id:
+        return {
+            "configured": False,
+            "status": "missing_config",
+            "message": "AZURE_SUBSCRIPTION_ID belum dikonfigurasi di backend.",
+            "resources": azure_resource_placeholders(resources),
+            "totals": empty_azure_totals(),
+        }
+
+    credential = DefaultAzureCredential()
+    token = credential.get_token("https://management.azure.com/.default").token
+    results = []
+    for resource in resources:
+        results.append(fetch_azure_metric_group(resource, token))
+
+    return {
+        "configured": True,
+        "status": "ready",
+        "message": "Metrik Azure Monitor diambil dari Management API.",
+        "window": "24h",
+        "resources": results,
+        "totals": summarize_azure_metrics(results),
+    }
+
+
+def build_cloudflare_ops_summary() -> dict[str, Any]:
+    token = optional_env("CLOUDFLARE_API_TOKEN")
+    zone_id = optional_env("CLOUDFLARE_ZONE_ID")
+
+    if not token or not zone_id:
+        return {
+            "configured": False,
+            "status": "missing_config",
+            "message": "CLOUDFLARE_API_TOKEN atau CLOUDFLARE_ZONE_ID belum dikonfigurasi di backend.",
+            "totals": empty_cloudflare_totals(),
+            "daily": [],
+        }
+
+    end_date = datetime.now(timezone.utc).date()
+    start_date = end_date - timedelta(days=6)
+    query = """
+    query ZoneTraffic($zoneTag: string, $start: Date, $end: Date) {
+      viewer {
+        zones(filter: { zoneTag: $zoneTag }) {
+          httpRequests1dGroups(
+            limit: 7,
+            filter: { date_geq: $start, date_leq: $end },
+            orderBy: [date_ASC]
+          ) {
+            dimensions { date }
+            sum { requests pageViews bytes cachedBytes threats }
+            uniq { uniques }
+          }
+        }
+      }
+    }
+    """
+    payload = {
+        "query": query,
+        "variables": {
+            "zoneTag": zone_id,
+            "start": start_date.isoformat(),
+            "end": end_date.isoformat(),
+        },
+    }
+
+    response = http_json(
+        "https://api.cloudflare.com/client/v4/graphql",
+        payload=payload,
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    if response.get("errors"):
+        return {
+            "configured": True,
+            "status": "error",
+            "message": "Cloudflare GraphQL mengembalikan error.",
+            "errors": response.get("errors", [])[:2],
+            "totals": empty_cloudflare_totals(),
+            "daily": [],
+        }
+
+    groups = (
+        response.get("data", {})
+        .get("viewer", {})
+        .get("zones", [{}])[0]
+        .get("httpRequests1dGroups", [])
+    )
+    daily = [normalize_cloudflare_day(item) for item in groups]
+    totals = {
+        "requests": sum(item["requests"] for item in daily),
+        "page_views": sum(item["page_views"] for item in daily),
+        "unique_visitors": sum(item["unique_visitors"] for item in daily),
+        "bandwidth_bytes": sum(item["bandwidth_bytes"] for item in daily),
+        "cached_bytes": sum(item["cached_bytes"] for item in daily),
+        "threats": sum(item["threats"] for item in daily),
+    }
+    totals["cache_ratio"] = round(
+        (totals["cached_bytes"] / totals["bandwidth_bytes"]) * 100,
+        2,
+    ) if totals["bandwidth_bytes"] else 0
+
+    return {
+        "configured": True,
+        "status": "ready",
+        "message": "Traffic web diambil dari Cloudflare GraphQL Analytics.",
+        "window": "7d",
+        "totals": totals,
+        "daily": daily,
+    }
+
+
+def azure_resource_id(
+    subscription_id: str,
+    resource_group: str,
+    namespace: str,
+    resource_type: str,
+    resource_name: str,
+) -> str:
+    return (
+        f"/subscriptions/{subscription_id}/resourceGroups/{resource_group}"
+        f"/providers/{namespace}/{resource_type}/{resource_name}"
+    )
+
+
+def fetch_azure_metric_group(resource: dict[str, Any], token: str) -> dict[str, Any]:
+    try:
+        response = http_json(
+            (
+                "https://management.azure.com"
+                f"{resource['resource_id']}/providers/microsoft.insights/metrics"
+            ),
+            params={
+                "api-version": "2018-01-01",
+                "metricnames": resource["metricnames"],
+                "timespan": azure_timespan(hours=24),
+                "interval": "PT1H",
+                "aggregation": resource["aggregation"],
+            },
+            headers={"Authorization": f"Bearer {token}"},
+        )
+        metrics = {
+            metric.get("name", {}).get("value"): summarize_azure_metric(metric)
+            for metric in response.get("value", [])
+        }
+        return {
+            "key": resource["key"],
+            "label": resource["label"],
+            "status": "ready",
+            "metrics": metrics,
+        }
+    except Exception as exc:
+        logging.warning("[Admin Ops] Gagal mengambil metrik %s: %s", resource["key"], exc)
+        return {
+            "key": resource["key"],
+            "label": resource["label"],
+            "status": "error",
+            "message": str(exc),
+            "metrics": {},
+        }
+
+
+def summarize_azure_metric(metric: dict[str, Any]) -> dict[str, Any]:
+    points = []
+    for series in metric.get("timeseries", []):
+        for item in series.get("data", []):
+            value = first_number(item, ("total", "average", "maximum", "minimum", "count"))
+            if value is not None:
+                points.append(
+                    {
+                        "time": item.get("timeStamp"),
+                        "value": value,
+                    }
+                )
+
+    values = [point["value"] for point in points]
+    unit = metric.get("unit", "Count")
+    return {
+        "display_name": metric.get("displayDescription") or metric.get("name", {}).get("localizedValue"),
+        "unit": unit,
+        "latest": values[-1] if values else 0,
+        "total": round(sum(values), 3) if values else 0,
+        "average": round(sum(values) / len(values), 3) if values else 0,
+        "points": points[-24:],
+    }
+
+
+def summarize_azure_metrics(resources: list[dict[str, Any]]) -> dict[str, Any]:
+    metrics = {}
+    for resource in resources:
+        metrics.update(resource.get("metrics", {}))
+
+    requests = metrics.get("Requests", {}).get("total", 0)
+    http_5xx = metrics.get("Http5xx", {}).get("total", 0)
+    latency = metrics.get("AverageResponseTime", {}).get("average", 0)
+    cpu_percent = metrics.get("Percentage CPU", {}).get("average", 0)
+    cpu_time = metrics.get("CpuTime", {}).get("total", 0)
+    memory_working_set = first_metric_value(metrics.get("MemoryWorkingSet", {}))
+    available_memory = first_metric_value(metrics.get("Available Memory Bytes", {}))
+    storage_transactions = metrics.get("Transactions", {}).get("total", 0)
+    cosmos_requests = metrics.get("TotalRequests", {}).get("total", 0)
+    availability = metrics.get("ServiceAvailability", {}).get("average", 0)
+    request_rate = round(requests / (24 * 60), 3) if requests else 0
+    error_rate = round((http_5xx / requests) * 100, 3) if requests else 0
+
+    return {
+        "function_requests": requests,
+        "function_5xx": http_5xx,
+        "function_avg_response_time": latency,
+        "function_request_rate_per_minute": request_rate,
+        "function_error_rate": error_rate,
+        "cpu_usage_percent": cpu_percent,
+        "cpu_time_seconds": cpu_time,
+        "memory_working_set_bytes": memory_working_set,
+        "available_memory_bytes": available_memory,
+        "storage_transactions": storage_transactions,
+        "cosmos_requests": cosmos_requests,
+        "cosmos_availability": availability,
+    }
+
+
+def normalize_cloudflare_day(item: dict[str, Any]) -> dict[str, Any]:
+    summary = item.get("sum", {})
+    uniq = item.get("uniq", {})
+    return {
+        "date": item.get("dimensions", {}).get("date"),
+        "requests": int(summary.get("requests") or 0),
+        "page_views": int(summary.get("pageViews") or 0),
+        "unique_visitors": int(uniq.get("uniques") or 0),
+        "bandwidth_bytes": int(summary.get("bytes") or 0),
+        "cached_bytes": int(summary.get("cachedBytes") or 0),
+        "threats": int(summary.get("threats") or 0),
+    }
+
+
+def azure_timespan(hours: int) -> str:
+    end = datetime.now(timezone.utc)
+    start = end - timedelta(hours=hours)
+    return f"{start.isoformat()}/{end.isoformat()}"
+
+
+def http_json(
+    url: str,
+    payload: dict[str, Any] | None = None,
+    params: dict[str, str] | None = None,
+    headers: dict[str, str] | None = None,
+) -> dict[str, Any]:
+    if params:
+        query = "&".join(
+            f"{url_quote(str(key))}={url_quote(str(value))}"
+            for key, value in params.items()
+        )
+        url = f"{url}?{query}"
+
+    body = None
+    request_headers = {"Accept": "application/json", **(headers or {})}
+    if payload is not None:
+        body = json.dumps(payload).encode()
+        request_headers["Content-Type"] = "application/json"
+
+    request = Request(url, data=body, headers=request_headers, method="POST" if body else "GET")
+    try:
+        with urlopen(request, timeout=12) as response:
+            return json.loads(response.read().decode())
+    except HTTPError as exc:
+        detail = exc.read().decode(errors="replace")[:500]
+        raise RuntimeError(f"HTTP {exc.code}: {detail}") from exc
+    except URLError as exc:
+        raise RuntimeError(str(exc.reason)) from exc
+
+
+def url_quote(value: str) -> str:
+    safe = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_.~:/,"
+    return "".join(char if char in safe else f"%{ord(char):02X}" for char in value)
+
+
+def first_number(item: dict[str, Any], keys: tuple[str, ...]) -> float | None:
+    for key in keys:
+        value = item.get(key)
+        if isinstance(value, (int, float)) and math.isfinite(float(value)):
+            return float(value)
+    return None
+
+
+def first_metric_value(metric: dict[str, Any]) -> float:
+    for key in ("latest", "average", "total"):
+        value = metric.get(key)
+        if isinstance(value, (int, float)) and math.isfinite(float(value)):
+            return float(value)
+    return 0
+
+
+def azure_resource_placeholders(resources: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    return [
+        {
+            "key": resource["key"],
+            "label": resource["label"],
+            "status": "missing_config",
+            "metrics": {},
+        }
+        for resource in resources
+    ]
+
+
+def empty_azure_totals() -> dict[str, int | float]:
+    return {
+        "function_requests": 0,
+        "function_5xx": 0,
+        "function_avg_response_time": 0,
+        "function_request_rate_per_minute": 0,
+        "function_error_rate": 0,
+        "cpu_usage_percent": 0,
+        "cpu_time_seconds": 0,
+        "memory_working_set_bytes": 0,
+        "available_memory_bytes": 0,
+        "storage_transactions": 0,
+        "cosmos_requests": 0,
+        "cosmos_availability": 0,
+    }
+
+
+def empty_cloudflare_totals() -> dict[str, int | float]:
+    return {
+        "requests": 0,
+        "page_views": 0,
+        "unique_visitors": 0,
+        "bandwidth_bytes": 0,
+        "cached_bytes": 0,
+        "cache_ratio": 0,
+        "threats": 0,
+    }
+
+
 def b64url_encode(value: bytes) -> str:
     return base64.urlsafe_b64encode(value).decode().rstrip("=")
 
@@ -1930,6 +2343,10 @@ def extract_device_id(item: Any) -> str:
                 return str(value)
 
     return "unknown-device"
+
+
+def optional_env(name: str, default: str = "") -> str:
+    return os.environ.get(name, default).strip()
 
 
 def _required_env(name: str) -> str:

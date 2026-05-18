@@ -22,7 +22,7 @@ Folder ini berisi bukti program Infrastructure as Code untuk resource Azure proy
 | `functions.tf` | Storage Function App, service plan serverless, Function App, raw-data container |
 | `storage.tf` | Storage static website sebagai backup hosting dashboard |
 | `network.tf` | Traffic Manager dan endpoint failover |
-| `monitoring.tf` | Action group, metric alert, dan storage lifecycle policy |
+| `monitoring.tf` | Action group, metric alert, diagnostic settings terpusat, dan storage lifecycle policy |
 | `evidence.tf` | Ringkasan perubahan Azure per minggu dalam format Terraform |
 
 ## Resource yang Dibuat Manual di Azure

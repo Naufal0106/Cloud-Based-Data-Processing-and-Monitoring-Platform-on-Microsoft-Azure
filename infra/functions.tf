@@ -71,6 +71,15 @@ resource "azurerm_linux_function_app" "func_app" {
     "KEY_VAULT_URL"          = azurerm_key_vault.kv.vault_uri
     "AUTH_TOKEN_SECRET"      = "@Microsoft.KeyVault(SecretUri=${azurerm_key_vault_secret.auth_token_secret.id})"
 
+    # Konfigurasi Admin Operations Dashboard
+    "AZURE_SUBSCRIPTION_ID"      = var.azure_subscription_id
+    "AZURE_RESOURCE_GROUP"       = azurerm_resource_group.rg.name
+    "AZURE_FUNCTION_APP_NAME"    = azurerm_linux_function_app.func_app.name
+    "AZURE_STORAGE_ACCOUNT_NAME" = azurerm_storage_account.func_storage.name
+    "AZURE_COSMOS_ACCOUNT_NAME"  = azurerm_cosmosdb_account.cosmos_acc.name
+    "AZURE_VM_NAME"              = var.azure_vm_name
+    "CLOUDFLARE_ZONE_ID"         = var.cloudflare_zone_id
+
     "APPLICATIONINSIGHTS_CONNECTION_STRING" = azurerm_application_insights.main.connection_string
   }
 

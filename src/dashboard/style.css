@@ -693,6 +693,131 @@ input[type="file"] {
 
 .admin-panel {
   border-color: rgba(15, 118, 110, 0.28);
+  display: grid;
+  gap: 1rem;
+}
+
+.admin-ops-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.developer-metrics-grid {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+.ops-card {
+  position: relative;
+  min-height: 112px;
+  padding: 0.95rem;
+  overflow: hidden;
+  background: var(--surface-soft);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.ops-card::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 4px;
+  background: var(--accent-color, var(--primary));
+}
+
+.ops-label {
+  display: block;
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.ops-card strong {
+  display: block;
+  margin-top: 0.8rem;
+  color: var(--accent-color, var(--text));
+  font-size: clamp(1.65rem, 2.4vw, 2.25rem);
+  line-height: 1;
+}
+
+.ops-card small {
+  display: block;
+  margin-top: 0.42rem;
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.admin-ops-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(320px, 0.85fr);
+  gap: 1rem;
+}
+
+.ops-section,
+.admin-users-section {
+  min-width: 0;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border);
+}
+
+.ops-section-header,
+.section-title-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.75rem;
+}
+
+.ops-section h3,
+.admin-users-section h3 {
+  margin: 0;
+  font-size: 0.92rem;
+  line-height: 1.2;
+}
+
+.ops-health-list {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.ops-health-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  min-height: 42px;
+  padding: 0.65rem 0.75rem;
+  background: var(--surface-soft);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.ops-health-item span {
+  color: var(--muted-strong);
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.ops-health-item strong {
+  color: var(--text);
+  font-size: 0.86rem;
+  text-align: right;
+}
+
+.ops-ready strong {
+  color: var(--green);
+}
+
+.ops-warn strong,
+.ops-missing_config strong {
+  color: var(--amber);
+}
+
+.ops-error strong {
+  color: var(--red);
 }
 
 .admin-table-wrap table {
@@ -886,12 +1011,15 @@ tbody tr:hover td {
 @media (max-width: 1100px) {
   .page-heading,
   .content-grid,
+  .admin-ops-layout,
   .science-grid,
   .science-details {
     grid-template-columns: 1fr;
   }
 
   .stats-grid,
+  .admin-ops-grid,
+  .developer-metrics-grid,
   .science-metrics {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -915,12 +1043,16 @@ tbody tr:hover td {
   }
 
   .stats-grid,
+  .admin-ops-grid,
+  .developer-metrics-grid,
   .science-metrics {
     grid-template-columns: 1fr;
   }
 
   .panel-header,
   .panel-header-wide,
+  .ops-section-header,
+  .section-title-row,
   .toolbar {
     align-items: stretch;
     flex-direction: column;

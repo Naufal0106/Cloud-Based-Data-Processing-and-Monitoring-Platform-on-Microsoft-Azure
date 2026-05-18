@@ -74,6 +74,7 @@ locals {
         "Metric alert alert-function-5xx-errors",
         "Metric alert alert-function-latency",
         "Metric alert alert-vm-cpu-high",
+        "Diagnostic settings terpusat ke Log Analytics untuk Function App, Cosmos DB, dan Blob Storage",
         "Storage lifecycle policy raw-data-retention untuk retensi file mentah",
         "Key Vault secret reference untuk AUTH_TOKEN_SECRET",
         "Traffic Manager endpoint failover untuk VM, Function App, dan backup storage"

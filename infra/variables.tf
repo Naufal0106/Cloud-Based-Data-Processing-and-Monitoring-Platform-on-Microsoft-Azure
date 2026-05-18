@@ -33,6 +33,24 @@ variable "alert_email" {
   default     = "kelompok11@example.com"
 }
 
+variable "azure_subscription_id" {
+  description = "Subscription ID Azure untuk endpoint admin operations mengambil Azure Monitor metrics"
+  type        = string
+  default     = ""
+}
+
+variable "cloudflare_zone_id" {
+  description = "Zone ID Cloudflare untuk endpoint admin operations mengambil traffic analytics"
+  type        = string
+  default     = ""
+}
+
+variable "azure_vm_name" {
+  description = "Nama VM Azure yang dipantau untuk CPU usage dashboard developer"
+  type        = string
+  default     = "VM-Web-Kelompok11"
+}
+
 variable "id_rendy" { type = string }
 variable "id_arifin" { type = string }
 variable "id_zhykwa" { type = string }

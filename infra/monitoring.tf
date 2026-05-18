@@ -108,3 +108,60 @@ resource "azurerm_storage_management_policy" "raw_data_lifecycle" {
     }
   }
 }
+
+resource "azurerm_monitor_diagnostic_setting" "function_central_logs" {
+  name                       = "diag-function-central-logs"
+  target_resource_id         = azurerm_linux_function_app.func_app.id
+  log_analytics_workspace_id = var.log_analytics_workspace_id
+
+  enabled_log {
+    category = "FunctionAppLogs"
+  }
+
+  metric {
+    category = "AllMetrics"
+    enabled  = true
+  }
+}
+
+resource "azurerm_monitor_diagnostic_setting" "cosmos_central_logs" {
+  name                       = "diag-cosmos-central-logs"
+  target_resource_id         = azurerm_cosmosdb_account.cosmos_acc.id
+  log_analytics_workspace_id = var.log_analytics_workspace_id
+
+  enabled_log {
+    category = "DataPlaneRequests"
+  }
+
+  enabled_log {
+    category = "QueryRuntimeStatistics"
+  }
+
+  metric {
+    category = "Requests"
+    enabled  = true
+  }
+}
+
+resource "azurerm_monitor_diagnostic_setting" "storage_blob_central_logs" {
+  name                       = "diag-storage-blob-central-logs"
+  target_resource_id         = "${azurerm_storage_account.func_storage.id}/blobServices/default"
+  log_analytics_workspace_id = var.log_analytics_workspace_id
+
+  enabled_log {
+    category = "StorageRead"
+  }
+
+  enabled_log {
+    category = "StorageWrite"
+  }
+
+  enabled_log {
+    category = "StorageDelete"
+  }
+
+  metric {
+    category = "Transaction"
+    enabled  = true
+  }
+}

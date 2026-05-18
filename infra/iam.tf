@@ -55,3 +55,10 @@ resource "azurerm_role_assignment" "role_zhykwa" {
   role_definition_name = "Network Contributor"
   principal_id         = var.id_zhykwa
 }
+
+# 5. Akses runtime untuk Function App membaca Azure Monitor metrics admin dashboard
+resource "azurerm_role_assignment" "function_monitoring_reader" {
+  scope                = azurerm_resource_group.rg.id
+  role_definition_name = "Monitoring Reader"
+  principal_id         = azurerm_linux_function_app.func_app.identity[0].principal_id
+}

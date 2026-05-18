@@ -95,6 +95,7 @@ Frontend tidak memanggil Azure Functions secara langsung. Dashboard memanggil en
 | POST | `/api/upload?clean=true` | Membersihkan data otomatis sebelum diproses dan disimpan |
 | GET | `/api/admin/users` | Admin-only: melihat daftar user |
 | PATCH/POST | `/api/admin/users/{user_id}/role` | Admin-only: mengubah role user |
+| GET | `/api/admin/ops-summary` | Admin-only: ringkasan Cloudflare traffic dan Azure workload |
 
 Endpoint `stats`, `data`, dan `upload` di Azure tetap menggunakan `auth_level=FUNCTION`, tetapi function key tidak disimpan di frontend.
 
@@ -110,6 +111,18 @@ Role yang digunakan:
 | `admin` | Semua akses user, ditambah melihat daftar user dan mengubah role |
 
 Register publik selalu membuat akun dengan role `user`. Admin tidak bisa dibuat dari form register publik agar tidak disalahgunakan.
+
+Dashboard admin digunakan sebagai dashboard monitoring developer:
+
+- CPU usage dari Azure Monitor,
+- memory/working set,
+- request rate backend,
+- latency rata-rata,
+- error rate HTTP 5xx,
+- transaksi Blob Storage,
+- request dan availability Cosmos DB.
+
+Data operasional ini diambil oleh backend admin endpoint. Token Cloudflare, subscription Azure, dan identifier resource tidak ditaruh di frontend.
 
 ## Format Upload
 
@@ -254,6 +267,25 @@ Untuk local deployment, salin `src/dashboard/env.example.js` menjadi `src/dashbo
 
 Untuk deployment publik, simpan `AZURE_FUNCTION_URL` dan `AZURE_FUNCTION_KEY` sebagai environment variable Cloudflare Pages Function, bukan di frontend.
 
+Untuk mengaktifkan data real pada dashboard admin, set environment variable berikut di Azure Function App:
+
+```text
+AZURE_SUBSCRIPTION_ID
+AZURE_RESOURCE_GROUP
+AZURE_FUNCTION_APP_NAME
+AZURE_STORAGE_ACCOUNT_NAME
+AZURE_COSMOS_ACCOUNT_NAME
+AZURE_VM_NAME
+CLOUDFLARE_ZONE_ID
+CLOUDFLARE_API_TOKEN
+```
+
+`CLOUDFLARE_API_TOKEN` harus disimpan sebagai secret backend/Azure App Setting atau Key Vault reference, bukan di repository dan bukan di frontend.
+
+Managed identity Azure Function App diberi role `Monitoring Reader` pada resource group agar endpoint admin dapat membaca Azure Monitor metrics tanpa menyimpan Azure credential manual.
+
+Logging terpusat Minggu 4 direpresentasikan di Terraform melalui diagnostic settings pada Azure Function App, Cosmos DB, dan Blob Storage ke Log Analytics/Azure Monitor.
+
 Catatan lokal: `AGENTS.md` dipakai sebagai catatan kerja agent di mesin developer dan sengaja masuk `.gitignore`, sehingga tidak menjadi bagian dari dokumentasi publik repository.
 
 ## Infrastruktur Azure
@@ -272,6 +304,7 @@ Folder `infra` berisi konfigurasi Terraform untuk resource Azure:
 - Key Vault secret `auth-token-secret` untuk tanda tangan token login
 - Application Insights untuk monitoring
 - Azure Monitor action group dan 3 alert rule operasional
+- Azure Monitor diagnostic settings untuk centralized logging ke Log Analytics
 - Storage lifecycle policy untuk optimasi retensi file mentah
 - Traffic Manager untuk endpoint routing/failover
 - NSG untuk subnet publik dan privat
@@ -349,6 +382,7 @@ Tambahkan juga domain `pages.dev` jika masih dipakai untuk preview deployment.
 ## Catatan Keamanan
 
 - Function key tidak boleh ditaruh di frontend publik. Dashboard memakai proxy `/api` agar key tetap berada di server-side Cloudflare Pages Function.
+- Cloudflare API token untuk admin analytics hanya boleh berada di backend Azure, bukan di browser.
 - Password user disimpan dengan hash PBKDF2, bukan plaintext.
 - Token login ditandatangani memakai `AUTH_TOKEN_SECRET` di Azure Function App.
 - SSH VM sebaiknya dibatasi hanya dari IP admin, bukan `*`.

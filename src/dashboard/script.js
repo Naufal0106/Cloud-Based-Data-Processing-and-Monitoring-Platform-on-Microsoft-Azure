@@ -16,6 +16,7 @@ const state = {
   allData: [],
   chart: null,
   scienceCharts: {},
+  adminTrafficChart: null,
   selectedFile: null,
   analysis: null,
   selectedFileAnalysis: null,
@@ -69,6 +70,9 @@ function cacheElements() {
     nameField: document.getElementById("name-field"),
     tabLogin: document.getElementById("tab-login"),
     tabRegister: document.getElementById("tab-register"),
+    pageEyebrow: document.getElementById("page-eyebrow"),
+    pageTitle: document.getElementById("page-title"),
+    pageSubtitle: document.getElementById("page-subtitle"),
     connectionPill: document.getElementById("connection-pill"),
     connectionLabel: document.getElementById("connection-label"),
     btnRefresh: document.getElementById("btnRefresh"),
@@ -82,6 +86,25 @@ function cacheElements() {
     btnAdminRefresh: document.getElementById("btnAdminRefresh"),
     currentUserLabel: document.getElementById("current-user-label"),
     adminPanel: document.getElementById("admin-panel"),
+    adminUsersSection: document.getElementById("admin-users-section"),
+    userStatsSection: document.getElementById("user-stats-section"),
+    userWorkbenchSection: document.getElementById("user-workbench-section"),
+    sciencePanel: document.getElementById("science-panel"),
+    dataPanel: document.getElementById("data-panel"),
+    adminCpuUsage: document.getElementById("admin-cpu-usage"),
+    adminCpuSub: document.getElementById("admin-cpu-sub"),
+    adminMemoryUsage: document.getElementById("admin-memory-usage"),
+    adminMemorySub: document.getElementById("admin-memory-sub"),
+    adminRequestRate: document.getElementById("admin-request-rate"),
+    adminRequestRateSub: document.getElementById("admin-request-rate-sub"),
+    adminLatency: document.getElementById("admin-latency"),
+    adminLatencySub: document.getElementById("admin-latency-sub"),
+    adminErrorRate: document.getElementById("admin-error-rate"),
+    adminErrorRateSub: document.getElementById("admin-error-rate-sub"),
+    adminCloudflareStatus: document.getElementById("admin-cloudflare-status"),
+    adminAzureStatus: document.getElementById("admin-azure-status"),
+    adminOpsHealth: document.getElementById("admin-ops-health"),
+    adminTrafficChart: document.getElementById("adminTrafficChart"),
     adminUsersBody: document.getElementById("admin-users-tbody"),
     fileInput: document.getElementById("fileInput"),
     dropzone: document.getElementById("dropzone"),
@@ -123,7 +146,7 @@ function bindEvents() {
   el.btnCleanUpload.addEventListener("click", () => uploadFile(true));
   el.btnRawUpload.addEventListener("click", () => uploadFile(false));
   el.btnAnalyticsRefresh.addEventListener("click", fetchAnalytics);
-  el.btnAdminRefresh.addEventListener("click", fetchAdminUsers);
+  el.btnAdminRefresh.addEventListener("click", fetchAdminPanel);
   el.adminUsersBody.addEventListener("click", handleAdminUserAction);
   el.dropzone.addEventListener("click", () => el.fileInput.click());
   el.fileInput.addEventListener("change", (event) => {
@@ -288,8 +311,11 @@ function showApp() {
   el.appView.hidden = false;
   updateRoleUi();
   addLog("info", `Login sebagai ${state.currentUser?.email || "user"}.`);
-  fetchAll();
-  fetchAdminUsers();
+  if (isAdmin()) {
+    fetchAdminPanel();
+  } else {
+    fetchAll();
+  }
 
   if (!state.refreshTimer) {
     state.refreshTimer = setInterval(fetchAll, CONFIG.AUTO_REFRESH_MS);
@@ -310,7 +336,21 @@ function updateRoleUi() {
   el.currentUserLabel.textContent = state.currentUser
     ? `${name} · ${role}`
     : "";
-  el.adminPanel.hidden = !isAdmin();
+  const admin = isAdmin();
+  el.adminPanel.hidden = !admin;
+  el.adminUsersSection.hidden = true;
+  el.userStatsSection.hidden = admin;
+  el.userWorkbenchSection.hidden = admin;
+  el.sciencePanel.hidden = admin;
+  el.dataPanel.hidden = admin;
+  el.pageEyebrow.textContent = admin ? "Admin monitoring dashboard" : "Cloud monitoring dashboard";
+  el.pageTitle.textContent = admin ? "Developer Monitoring" : "Realtime Data Processing";
+  el.pageSubtitle.textContent = admin
+    ? "Pantau CPU, memory, request rate, latency, error rate, dan centralized logging Azure."
+    : "Frontend berjalan di Cloudflare Pages, backend dan data pipeline berjalan di Microsoft Azure.";
+  if (!admin) {
+    renderAdminOpsEmpty("Akses admin diperlukan");
+  }
 }
 
 function isAdmin() {
@@ -351,6 +391,7 @@ function setBusy(isBusy) {
   el.btnRefresh.disabled = isBusy;
   el.btnDataRefresh.disabled = isBusy;
   el.btnAnalyticsRefresh.disabled = isBusy;
+  el.btnAdminRefresh.disabled = isBusy;
   updateUploadButton();
 }
 
@@ -436,7 +477,11 @@ async function parseJsonResponse(response) {
 
 async function fetchAll() {
   setBusy(true);
-  await Promise.allSettled([fetchStats(), fetchData(), fetchAnalytics()]);
+  if (isAdmin()) {
+    await fetchAdminPanel();
+  } else {
+    await Promise.allSettled([fetchStats(), fetchData(), fetchAnalytics()]);
+  }
   setBusy(false);
 }
 
@@ -504,6 +549,34 @@ async function fetchAnalytics() {
   }
 }
 
+async function fetchAdminPanel() {
+  if (!isAdmin()) return;
+  await fetchAdminOps();
+}
+
+async function fetchAdminOps() {
+  if (!isAdmin()) {
+    renderAdminOpsEmpty("Akses admin diperlukan");
+    return;
+  }
+
+  if (state.isPreviewSession) {
+    renderAdminOps(getPreviewOpsSummary());
+    return;
+  }
+
+  if (!state.authToken) return;
+
+  try {
+    const payload = await apiGet("admin/ops-summary");
+    renderAdminOps(payload);
+    addLog("success", "Admin operations tersinkron dari Azure dan Cloudflare.");
+  } catch (error) {
+    renderAdminOpsEmpty(`Gagal memuat operasi admin: ${error.message}`);
+    addLog("warn", `Admin operations gagal dimuat. ${error.message}`);
+  }
+}
+
 async function fetchAdminUsers() {
   if (!isAdmin()) {
     renderAdminUsers([]);
@@ -529,6 +602,185 @@ async function fetchAdminUsers() {
   } finally {
     el.btnAdminRefresh.disabled = false;
   }
+}
+
+function renderAdminOps(payload = {}) {
+  const azure = payload.azure || {};
+  const cloudflare = payload.cloudflare || {};
+  const azureTotals = azure.totals || {};
+
+  el.adminCpuUsage.textContent = formatCpu(azureTotals);
+  el.adminMemoryUsage.textContent = formatMemory(azureTotals);
+  el.adminRequestRate.textContent = `${formatRate(azureTotals.function_request_rate_per_minute)}/m`;
+  el.adminLatency.textContent = formatSeconds(azureTotals.function_avg_response_time);
+  el.adminErrorRate.textContent = formatPercent(azureTotals.function_error_rate);
+
+  el.adminCpuSub.textContent = azureTotals.cpu_usage_percent
+    ? "VM Percentage CPU"
+    : "Function CPU time";
+  el.adminMemorySub.textContent = azureTotals.memory_working_set_bytes
+    ? "Function working set"
+    : "VM available memory";
+  el.adminRequestRateSub.textContent = `${formatCompact(azureTotals.function_requests)} request/24 jam`;
+  el.adminLatencySub.textContent = "Average response time";
+  el.adminErrorRateSub.textContent = `${formatCompact(azureTotals.function_5xx)} HTTP 5xx/24 jam`;
+  el.adminCloudflareStatus.textContent = statusLabel(cloudflare);
+  el.adminAzureStatus.textContent = statusLabel(azure);
+
+  renderAdminTrafficChart(azure);
+  renderAdminOpsHealth(azure, cloudflare);
+}
+
+function renderAdminOpsEmpty(message) {
+  el.adminCpuUsage.textContent = "-";
+  el.adminMemoryUsage.textContent = "-";
+  el.adminRequestRate.textContent = "-";
+  el.adminLatency.textContent = "-";
+  el.adminErrorRate.textContent = "-";
+  el.adminCpuSub.textContent = message;
+  el.adminMemorySub.textContent = "Azure Monitor";
+  el.adminRequestRateSub.textContent = "Request/menit";
+  el.adminLatencySub.textContent = "Average response";
+  el.adminErrorRateSub.textContent = "HTTP 5xx";
+  el.adminCloudflareStatus.textContent = "-";
+  el.adminAzureStatus.textContent = "-";
+  renderAdminTrafficChart({});
+  el.adminOpsHealth.innerHTML = `
+    <div class="ops-health-item">
+      <span>${escapeHtml(message)}</span>
+      <strong>-</strong>
+    </div>
+  `;
+}
+
+function renderAdminTrafficChart(azure) {
+  if (!el.adminTrafficChart || !window.Chart) return;
+  if (state.adminTrafficChart) {
+    state.adminTrafficChart.destroy();
+  }
+
+  const functionMetrics = getAzureResourceMetrics(azure, "function");
+  const requestPoints = metricPoints(functionMetrics.Requests);
+  const errorPoints = metricPoints(functionMetrics.Http5xx);
+  const labels = requestPoints.length
+    ? requestPoints.map((item) => formatPointTime(item.time))
+    : ["Belum ada data"];
+  const requests = requestPoints.length
+    ? requestPoints.map((item) => Number((toNumber(item.value) / 60).toFixed(2)))
+    : [0];
+  const errors = errorPoints.length ? errorPoints.map((item) => toNumber(item.value)) : [0];
+
+  state.adminTrafficChart = new Chart(el.adminTrafficChart.getContext("2d"), {
+    type: "line",
+    data: {
+      labels,
+      datasets: [
+        {
+          label: "Request/min",
+          data: requests,
+          borderColor: "#2563eb",
+          backgroundColor: "rgba(37, 99, 235, 0.12)",
+          fill: true,
+          tension: 0.32,
+        },
+        {
+          label: "HTTP 5xx",
+          data: errors,
+          borderColor: "#dc2626",
+          backgroundColor: "rgba(220, 38, 38, 0.1)",
+          fill: true,
+          tension: 0.32,
+        },
+      ],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          display: true,
+          labels: { boxWidth: 10, color: "#475569" },
+        },
+      },
+      scales: {
+        x: {
+          ticks: { color: "#64748b", maxRotation: 0, autoSkip: true },
+          grid: { display: false },
+        },
+        y: {
+          beginAtZero: true,
+          ticks: { color: "#64748b", precision: 0 },
+          grid: { color: "rgba(100, 116, 139, 0.18)" },
+        },
+      },
+    },
+  });
+}
+
+function renderAdminOpsHealth(azure, cloudflare) {
+  const totals = azure.totals || {};
+  const cfTotals = cloudflare.totals || {};
+  const rows = [
+    {
+      label: "Centralized logging",
+      value: azure.configured ? "Azure Monitor + Log Analytics" : "Belum konfigurasi",
+      tone: azure.status,
+    },
+    {
+      label: "CPU usage",
+      value: formatCpu(totals),
+      tone: toNumber(totals.cpu_usage_percent) >= 80 ? "warn" : "ready",
+    },
+    {
+      label: "Memory",
+      value: formatMemory(totals),
+      tone: "ready",
+    },
+    {
+      label: "Request rate",
+      value: `${formatRate(totals.function_request_rate_per_minute)}/menit`,
+      tone: "ready",
+    },
+    {
+      label: "Latency",
+      value: formatSeconds(totals.function_avg_response_time),
+      tone: toNumber(totals.function_avg_response_time) > 2 ? "warn" : "ready",
+    },
+    {
+      label: "Error rate",
+      value: formatPercent(totals.function_error_rate),
+      tone: toNumber(totals.function_error_rate) > 1 ? "warn" : "ready",
+    },
+    {
+      label: "Storage transactions",
+      value: formatCompact(totals.storage_transactions),
+      tone: "ready",
+    },
+    {
+      label: "Cosmos DB requests",
+      value: formatCompact(totals.cosmos_requests),
+      tone: "ready",
+    },
+    {
+      label: "Cosmos availability",
+      value: totals.cosmos_availability ? `${Number(totals.cosmos_availability).toFixed(2)}%` : "-",
+      tone: toNumber(totals.cosmos_availability) >= 99 ? "ready" : "warn",
+    },
+    {
+      label: "Cloudflare CDN",
+      value: cloudflare.configured ? `${formatCompact(cfTotals.requests)} request` : "Belum konfigurasi",
+      tone: cloudflare.status,
+    },
+  ];
+
+  el.adminOpsHealth.innerHTML = rows
+    .map((row) => `
+      <div class="ops-health-item ops-${safeToken(row.tone || "unknown")}">
+        <span>${escapeHtml(row.label)}</span>
+        <strong>${escapeHtml(row.value)}</strong>
+      </div>
+    `)
+    .join("");
 }
 
 function renderAdminUsers(users) {
@@ -1213,6 +1465,83 @@ function getPreviewUsers() {
   ];
 }
 
+function getPreviewOpsSummary() {
+  const today = new Date();
+  const daily = Array.from({ length: 7 }, (_, index) => {
+    const date = new Date(today);
+    date.setDate(today.getDate() - (6 - index));
+    return {
+      date: date.toISOString().slice(0, 10),
+      requests: 420 + index * 64,
+      page_views: 180 + index * 31,
+      unique_visitors: 72 + index * 9,
+      bandwidth_bytes: 14_000_000 + index * 1_700_000,
+      cached_bytes: 9_500_000 + index * 1_200_000,
+      threats: index === 5 ? 2 : 0,
+    };
+  });
+
+  return {
+    success: true,
+    generated_at: today.toISOString(),
+    cloudflare: {
+      configured: true,
+      status: "ready",
+      message: "Preview Cloudflare Analytics",
+      totals: {
+        requests: daily.reduce((sum, item) => sum + item.requests, 0),
+        page_views: daily.reduce((sum, item) => sum + item.page_views, 0),
+        unique_visitors: daily.reduce((sum, item) => sum + item.unique_visitors, 0),
+        bandwidth_bytes: daily.reduce((sum, item) => sum + item.bandwidth_bytes, 0),
+        cached_bytes: daily.reduce((sum, item) => sum + item.cached_bytes, 0),
+        cache_ratio: 68.5,
+        threats: 2,
+      },
+      daily,
+    },
+    azure: {
+      configured: true,
+      status: "ready",
+      message: "Preview Azure Monitor",
+      totals: {
+        function_requests: 1280,
+        function_5xx: 3,
+        function_avg_response_time: 0.42,
+        function_request_rate_per_minute: 0.89,
+        function_error_rate: 0.23,
+        cpu_usage_percent: 37.4,
+        cpu_time_seconds: 82,
+        memory_working_set_bytes: 284_000_000,
+        available_memory_bytes: 1_240_000_000,
+        storage_transactions: 842,
+        cosmos_requests: 1550,
+        cosmos_availability: 99.99,
+      },
+      resources: [
+        {
+          key: "function",
+          label: "Azure Functions",
+          status: "ready",
+          metrics: {
+            Requests: {
+              points: daily.map((item) => ({
+                time: `${item.date}T00:00:00Z`,
+                value: item.requests,
+              })),
+            },
+            Http5xx: {
+              points: daily.map((item, index) => ({
+                time: `${item.date}T00:00:00Z`,
+                value: index === 5 ? 2 : index === 6 ? 1 : 0,
+              })),
+            },
+          },
+        },
+      ],
+    },
+  };
+}
+
 function buildPreviewScienceAnalysis() {
   const records = getPreviewData();
   const columns = ["id", "processed_at", "deviceId", "category", "status", "summary", "source_file"];
@@ -1311,6 +1640,72 @@ function formatBytes(bytes) {
   if (bytes < 1024) return `${bytes} B`;
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
   return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
+}
+
+function formatCpu(totals = {}) {
+  const cpuPercent = toNumber(totals.cpu_usage_percent);
+  if (cpuPercent > 0) return `${cpuPercent.toFixed(1)}%`;
+  const cpuTime = toNumber(totals.cpu_time_seconds);
+  return cpuTime > 0 ? `${cpuTime.toFixed(0)} s` : "-";
+}
+
+function formatMemory(totals = {}) {
+  const workingSet = toNumber(totals.memory_working_set_bytes);
+  if (workingSet > 0) return formatBytes(workingSet);
+  const available = toNumber(totals.available_memory_bytes);
+  return available > 0 ? formatBytes(available) : "-";
+}
+
+function formatCompact(value) {
+  return toNumber(value).toLocaleString("id-ID", {
+    notation: "compact",
+    maximumFractionDigits: 1,
+  });
+}
+
+function formatRate(value) {
+  return toNumber(value).toLocaleString("id-ID", {
+    maximumFractionDigits: 2,
+  });
+}
+
+function formatPercent(value) {
+  return `${toNumber(value).toFixed(1)}%`;
+}
+
+function formatSeconds(value) {
+  const seconds = toNumber(value);
+  if (seconds <= 0) return "-";
+  if (seconds < 1) return `${Math.round(seconds * 1000)} ms`;
+  return `${seconds.toFixed(2)} s`;
+}
+
+function statusLabel(payload = {}) {
+  if (payload.status === "ready") return "Ready";
+  if (payload.status === "error") return "Error";
+  if (payload.status === "missing_config") return "Belum konfigurasi";
+  return payload.configured ? "Ready" : "Belum konfigurasi";
+}
+
+function getAzureResourceMetrics(azure = {}, key) {
+  const resource = Array.isArray(azure.resources)
+    ? azure.resources.find((item) => item.key === key)
+    : null;
+  return resource?.metrics || {};
+}
+
+function metricPoints(metric = {}) {
+  return Array.isArray(metric.points) ? metric.points : [];
+}
+
+function formatPointTime(value) {
+  if (!value) return "-";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return String(value).slice(0, 10);
+  return date.toLocaleTimeString("id-ID", {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 }
 
 function safeToken(value) {

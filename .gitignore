@@ -98,6 +98,9 @@ tmp/
 # Local helper scripts are kept on developer machines only.
 scripts/
 
+# Local work backups are kept out of GitHub.
+local-backups/
+
 # ===============================
 # Editor / IDE
 # ===============================

@@ -103,16 +103,16 @@
       <main class="app-shell">
       <section class="page-heading" aria-labelledby="page-title">
         <div>
-          <p class="eyebrow">Cloud monitoring dashboard</p>
+          <p class="eyebrow" id="page-eyebrow">Cloud monitoring dashboard</p>
           <h1 id="page-title">Realtime Data Processing</h1>
-        <p class="page-subtitle">
+        <p class="page-subtitle" id="page-subtitle">
           Frontend berjalan di Cloudflare Pages, backend dan data pipeline
           berjalan di Microsoft Azure.
         </p>
       </div>
       </section>
 
-      <section class="stats-grid" aria-label="Ringkasan data">
+      <section class="stats-grid" id="user-stats-section" aria-label="Ringkasan data">
         <article class="stat-card accent-blue">
           <span class="stat-label">Total Record</span>
           <strong class="stat-value" id="s-total">-</strong>
@@ -138,36 +138,104 @@
       <section class="panel admin-panel" id="admin-panel" hidden>
         <div class="panel-header panel-header-wide">
           <div>
-            <h2>Admin Users</h2>
-            <p>Kelola role user dashboard. Register publik tetap membuat role user.</p>
+            <h2>Developer Monitoring</h2>
+            <p>CPU, memory, request rate, latency, error rate, dan centralized logging.</p>
           </div>
           <button class="btn btn-secondary btn-sm" id="btnAdminRefresh" type="button">
-            Reload Users
+            Reload Admin
           </button>
         </div>
 
-        <div class="table-wrap admin-table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>Nama</th>
-                <th>Email</th>
-                <th>Role</th>
-                <th>Terdaftar</th>
-                <th>Login Terakhir</th>
-                <th>Aksi</th>
-              </tr>
-            </thead>
-            <tbody id="admin-users-tbody">
-              <tr>
-                <td colspan="6" class="empty">Admin panel belum dimuat.</td>
-              </tr>
-            </tbody>
-          </table>
+        <div class="admin-ops-grid developer-metrics-grid" aria-label="Ringkasan monitoring developer">
+          <article class="ops-card accent-blue">
+            <span class="ops-label">CPU Usage</span>
+            <strong id="admin-cpu-usage">-</strong>
+            <small id="admin-cpu-sub">Azure Monitor</small>
+          </article>
+          <article class="ops-card accent-green">
+            <span class="ops-label">Memory</span>
+            <strong id="admin-memory-usage">-</strong>
+            <small id="admin-memory-sub">Working set</small>
+          </article>
+          <article class="ops-card accent-amber">
+            <span class="ops-label">Request Rate</span>
+            <strong id="admin-request-rate">-</strong>
+            <small id="admin-request-rate-sub">Request/menit</small>
+          </article>
+          <article class="ops-card accent-blue">
+            <span class="ops-label">Latency</span>
+            <strong id="admin-latency">-</strong>
+            <small id="admin-latency-sub">Average response</small>
+          </article>
+          <article class="ops-card accent-red">
+            <span class="ops-label">Error Rate</span>
+            <strong id="admin-error-rate">-</strong>
+            <small id="admin-error-rate-sub">HTTP 5xx</small>
+          </article>
+        </div>
+
+        <div class="admin-ops-layout">
+          <article class="ops-section">
+            <div class="ops-section-header">
+              <div>
+                <h3>Request dan Error Rate</h3>
+                <p>Tren request backend dan error HTTP 5xx dari Azure Monitor.</p>
+              </div>
+              <span class="mono panel-meta" id="admin-cloudflare-status">-</span>
+            </div>
+            <div class="mini-chart-wrap">
+              <canvas id="adminTrafficChart"></canvas>
+            </div>
+          </article>
+
+          <article class="ops-section">
+            <div class="ops-section-header">
+              <div>
+                <h3>Centralized Monitoring</h3>
+                <p>Log dan metrik terpusat melalui Azure Monitor dan Log Analytics.</p>
+              </div>
+              <span class="mono panel-meta" id="admin-azure-status">-</span>
+            </div>
+            <div class="ops-health-list" id="admin-ops-health">
+              <div class="ops-health-item">
+                <span>Menunggu data admin...</span>
+                <strong>-</strong>
+              </div>
+            </div>
+          </article>
+        </div>
+
+        <div class="admin-users-section" id="admin-users-section" hidden>
+          <div class="section-title-row">
+            <div>
+              <h3>User Management</h3>
+              <p>Kelola role user dashboard. Register publik tetap membuat role user.</p>
+            </div>
+          </div>
+
+          <div class="table-wrap admin-table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Nama</th>
+                  <th>Email</th>
+                  <th>Role</th>
+                  <th>Terdaftar</th>
+                  <th>Login Terakhir</th>
+                  <th>Aksi</th>
+                </tr>
+              </thead>
+              <tbody id="admin-users-tbody">
+                <tr>
+                  <td colspan="6" class="empty">Admin panel belum dimuat.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
         </div>
       </section>
 
-      <section class="content-grid">
+      <section class="content-grid" id="user-workbench-section">
         <article class="panel chart-panel">
           <div class="panel-header">
             <div>
@@ -219,7 +287,7 @@
         </article>
       </section>
 
-      <section class="panel science-panel" aria-labelledby="science-title">
+      <section class="panel science-panel" id="science-panel" aria-labelledby="science-title">
         <div class="panel-header panel-header-wide">
           <div>
             <h2 id="science-title">Data Science Processing</h2>
@@ -314,7 +382,7 @@
         </div>
       </section>
 
-      <section class="panel data-panel">
+      <section class="panel data-panel" id="data-panel">
         <div class="panel-header panel-header-wide">
           <div>
             <h2>Data Records</h2>
