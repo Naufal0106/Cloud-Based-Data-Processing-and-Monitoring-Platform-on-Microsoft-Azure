@@ -95,24 +95,26 @@ Frontend tidak memanggil Azure Functions secara langsung. Dashboard memanggil en
 | POST | `/api/upload?clean=true` | Membersihkan data otomatis sebelum diproses dan disimpan |
 | GET | `/api/admin/users` | Admin-only: melihat daftar user |
 | PATCH/POST | `/api/admin/users/{user_id}/role` | Admin-only: mengubah role user |
-| GET | `/api/admin/ops-summary` | Admin-only: ringkasan Cloudflare traffic dan Azure workload |
+| GET | `/api/dev/ops-summary` | Dev/admin-only: ringkasan Azure Monitor dan Cloudflare workload |
+| GET | `/api/admin/ops-summary` | Alias kompatibilitas untuk ringkasan monitoring |
 
 Endpoint `stats`, `data`, dan `upload` di Azure tetap menggunakan `auth_level=FUNCTION`, tetapi function key tidak disimpan di frontend.
 
-## Role User dan Admin
+## Role User, Developer, dan Admin
 
-Dashboard memakai satu domain yang sama, yaitu `kelompok11cc.my.id`. Domain admin tidak wajib dibuat terpisah karena akses dibedakan lewat role login.
+Dashboard memakai satu domain yang sama, yaitu `kelompok11cc.my.id`. Domain admin atau developer tidak wajib dibuat terpisah karena akses dibedakan lewat role login.
 
 Role yang digunakan:
 
 | Role | Akses |
 | --- | --- |
 | `user` | Login, melihat dashboard, membaca data/statistik, dan upload data |
-| `admin` | Semua akses user, ditambah melihat daftar user dan mengubah role |
+| `dev` | Melihat dashboard developer monitoring: CPU, memory, request rate, latency, error rate, dan centralized logging |
+| `admin` | Mengelola daftar user dan mengubah role `user`, `dev`, atau `admin` |
 
-Register publik selalu membuat akun dengan role `user`. Admin tidak bisa dibuat dari form register publik agar tidak disalahgunakan.
+Register publik selalu membuat akun dengan role `user`. Akun `dev` dan `admin` tidak bisa dibuat dari form register publik agar tidak disalahgunakan.
 
-Dashboard admin digunakan sebagai dashboard monitoring developer:
+Dashboard developer digunakan sebagai dashboard monitoring:
 
 - CPU usage dari Azure Monitor,
 - memory/working set,

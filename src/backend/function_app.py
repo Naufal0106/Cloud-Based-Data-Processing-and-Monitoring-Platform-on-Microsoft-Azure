@@ -35,8 +35,9 @@ MAX_ANALYTICS_RECORDS = 500
 MAX_PROFILE_COLUMNS = 40
 MAX_CHART_BUCKETS = 8
 SUPPORTED_UPLOAD_EXTENSIONS = {".json", ".csv", ".xlsx", ".xls"}
-USER_ROLES = {"admin", "user"}
+USER_ROLES = {"admin", "dev", "user"}
 ADMIN_ROLE = "admin"
+DEV_ROLE = "dev"
 DEFAULT_USER_ROLE = "user"
 AUTH_TOKEN_TTL_SECONDS = 60 * 60 * 8
 PASSWORD_MIN_LENGTH = 8
@@ -495,12 +496,25 @@ def update_admin_user_role(req: func.HttpRequest) -> func.HttpResponse:
         return error_response("Gagal memperbarui role user")
 
 
-@app.route(route="admin/ops-summary", methods=["GET"], auth_level=func.AuthLevel.FUNCTION)
-def get_admin_ops_summary(req: func.HttpRequest) -> func.HttpResponse:
-    _, auth_error = require_role(req, {ADMIN_ROLE})
+@app.route(route="dev/ops-summary", methods=["GET"], auth_level=func.AuthLevel.FUNCTION)
+def get_dev_ops_summary(req: func.HttpRequest) -> func.HttpResponse:
+    _, auth_error = require_role(req, {ADMIN_ROLE, DEV_ROLE})
     if auth_error:
         return auth_error
 
+    return build_ops_summary_response()
+
+
+@app.route(route="admin/ops-summary", methods=["GET"], auth_level=func.AuthLevel.FUNCTION)
+def get_admin_ops_summary(req: func.HttpRequest) -> func.HttpResponse:
+    _, auth_error = require_role(req, {ADMIN_ROLE, DEV_ROLE})
+    if auth_error:
+        return auth_error
+
+    return build_ops_summary_response()
+
+
+def build_ops_summary_response() -> func.HttpResponse:
     return json_response(
         {
             "success": True,

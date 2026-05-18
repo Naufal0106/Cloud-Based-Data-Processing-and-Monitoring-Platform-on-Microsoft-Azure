@@ -138,15 +138,15 @@
       <section class="panel admin-panel" id="admin-panel" hidden>
         <div class="panel-header panel-header-wide">
           <div>
-            <h2>Developer Monitoring</h2>
-            <p>CPU, memory, request rate, latency, error rate, dan centralized logging.</p>
+            <h2 id="admin-panel-title">Developer Monitoring</h2>
+            <p id="admin-panel-subtitle">CPU, memory, request rate, latency, error rate, dan centralized logging.</p>
           </div>
           <button class="btn btn-secondary btn-sm" id="btnAdminRefresh" type="button">
             Reload Admin
           </button>
         </div>
 
-        <div class="admin-ops-grid developer-metrics-grid" aria-label="Ringkasan monitoring developer">
+        <div class="admin-ops-grid developer-metrics-grid" id="developer-metrics-grid" aria-label="Ringkasan monitoring developer">
           <article class="ops-card accent-blue">
             <span class="ops-label">CPU Usage</span>
             <strong id="admin-cpu-usage">-</strong>
@@ -174,7 +174,7 @@
           </article>
         </div>
 
-        <div class="admin-ops-layout">
+        <div class="admin-ops-layout" id="developer-monitoring-layout">
           <article class="ops-section">
             <div class="ops-section-header">
               <div>

@@ -86,6 +86,10 @@ function cacheElements() {
     btnAdminRefresh: document.getElementById("btnAdminRefresh"),
     currentUserLabel: document.getElementById("current-user-label"),
     adminPanel: document.getElementById("admin-panel"),
+    adminPanelTitle: document.getElementById("admin-panel-title"),
+    adminPanelSubtitle: document.getElementById("admin-panel-subtitle"),
+    developerMetricsGrid: document.getElementById("developer-metrics-grid"),
+    developerMonitoringLayout: document.getElementById("developer-monitoring-layout"),
     adminUsersSection: document.getElementById("admin-users-section"),
     userStatsSection: document.getElementById("user-stats-section"),
     userWorkbenchSection: document.getElementById("user-workbench-section"),
@@ -146,7 +150,7 @@ function bindEvents() {
   el.btnCleanUpload.addEventListener("click", () => uploadFile(true));
   el.btnRawUpload.addEventListener("click", () => uploadFile(false));
   el.btnAnalyticsRefresh.addEventListener("click", fetchAnalytics);
-  el.btnAdminRefresh.addEventListener("click", fetchAdminPanel);
+  el.btnAdminRefresh.addEventListener("click", refreshRolePanel);
   el.adminUsersBody.addEventListener("click", handleAdminUserAction);
   el.dropzone.addEventListener("click", () => el.fileInput.click());
   el.fileInput.addEventListener("change", (event) => {
@@ -236,12 +240,15 @@ async function handleAuthSubmit(event) {
 
 function startPreviewSession(role) {
   const isAdminPreview = role === "admin";
+  const isDevPreview = role === "dev";
   state.authToken = `preview-${role}`;
   state.currentUser = {
-    id: isAdminPreview ? "preview-admin" : "preview-user",
-    name: isAdminPreview ? "Preview Admin" : "Preview User",
+    id: isAdminPreview ? "preview-admin" : isDevPreview ? "preview-dev" : "preview-user",
+    name: isAdminPreview ? "Preview Admin" : isDevPreview ? "Preview Developer" : "Preview User",
     email: isAdminPreview
       ? "admin@kelompok11cc.my.id"
+      : isDevPreview
+        ? "dev@kelompok11cc.my.id"
       : "user@kelompok11cc.my.id",
     role,
   };
@@ -311,8 +318,10 @@ function showApp() {
   el.appView.hidden = false;
   updateRoleUi();
   addLog("info", `Login sebagai ${state.currentUser?.email || "user"}.`);
-  if (isAdmin()) {
-    fetchAdminPanel();
+  if (isDev()) {
+    fetchDeveloperMonitoring();
+  } else if (isAdmin()) {
+    fetchAdminUsers();
   } else {
     fetchAll();
   }
@@ -337,19 +346,47 @@ function updateRoleUi() {
     ? `${name} · ${role}`
     : "";
   const admin = isAdmin();
-  el.adminPanel.hidden = !admin;
-  el.adminUsersSection.hidden = true;
-  el.userStatsSection.hidden = admin;
-  el.userWorkbenchSection.hidden = admin;
-  el.sciencePanel.hidden = admin;
-  el.dataPanel.hidden = admin;
-  el.pageEyebrow.textContent = admin ? "Admin monitoring dashboard" : "Cloud monitoring dashboard";
-  el.pageTitle.textContent = admin ? "Developer Monitoring" : "Realtime Data Processing";
-  el.pageSubtitle.textContent = admin
+  const dev = isDev();
+  el.adminPanel.hidden = !(admin || dev);
+  el.developerMetricsGrid.hidden = !dev;
+  el.developerMonitoringLayout.hidden = !dev;
+  el.adminUsersSection.hidden = !admin;
+  el.adminPanelTitle.textContent = dev ? "Developer Monitoring" : "Admin Management";
+  el.adminPanelSubtitle.textContent = dev
+    ? "CPU, memory, request rate, latency, error rate, dan centralized logging."
+    : "Kelola role user, developer, dan admin.";
+  el.btnAdminRefresh.textContent = dev ? "Reload Monitoring" : "Reload Users";
+  el.userStatsSection.hidden = admin || dev;
+  el.userWorkbenchSection.hidden = admin || dev;
+  el.sciencePanel.hidden = admin || dev;
+  el.dataPanel.hidden = admin || dev;
+  el.pageEyebrow.textContent = dev
+    ? "Developer monitoring dashboard"
+    : admin
+      ? "Admin access dashboard"
+      : "Cloud monitoring dashboard";
+  el.pageTitle.textContent = dev
+    ? "Developer Monitoring"
+    : admin
+      ? "Admin Management"
+      : "Realtime Data Processing";
+  el.pageSubtitle.textContent = dev
     ? "Pantau CPU, memory, request rate, latency, error rate, dan centralized logging Azure."
+    : admin
+      ? "Kelola role dan akses user tanpa membuka fitur data processing."
     : "Frontend berjalan di Cloudflare Pages, backend dan data pipeline berjalan di Microsoft Azure.";
-  if (!admin) {
-    renderAdminOpsEmpty("Akses admin diperlukan");
+  if (!dev) {
+    renderAdminOpsEmpty("Akses developer diperlukan");
+  }
+}
+
+function refreshRolePanel() {
+  if (isDev()) {
+    fetchDeveloperMonitoring();
+    return;
+  }
+  if (isAdmin()) {
+    fetchAdminUsers();
   }
 }
 
@@ -357,11 +394,15 @@ function isAdmin() {
   return state.currentUser?.role === "admin";
 }
 
+function isDev() {
+  return state.currentUser?.role === "dev";
+}
+
 function getLocalPreviewRole() {
   if (!LOCAL_PREVIEW_HOSTS.has(window.location.hostname)) return "";
 
   const role = new URLSearchParams(window.location.search).get("preview");
-  return role === "admin" || role === "user" ? role : "";
+  return role === "admin" || role === "dev" || role === "user" ? role : "";
 }
 
 function setAuthLoading(isLoading) {
@@ -477,8 +518,10 @@ async function parseJsonResponse(response) {
 
 async function fetchAll() {
   setBusy(true);
-  if (isAdmin()) {
-    await fetchAdminPanel();
+  if (isDev()) {
+    await fetchDeveloperMonitoring();
+  } else if (isAdmin()) {
+    await fetchAdminUsers();
   } else {
     await Promise.allSettled([fetchStats(), fetchData(), fetchAnalytics()]);
   }
@@ -549,14 +592,14 @@ async function fetchAnalytics() {
   }
 }
 
-async function fetchAdminPanel() {
-  if (!isAdmin()) return;
+async function fetchDeveloperMonitoring() {
+  if (!isDev()) return;
   await fetchAdminOps();
 }
 
 async function fetchAdminOps() {
-  if (!isAdmin()) {
-    renderAdminOpsEmpty("Akses admin diperlukan");
+  if (!isDev()) {
+    renderAdminOpsEmpty("Akses developer diperlukan");
     return;
   }
 
@@ -568,12 +611,12 @@ async function fetchAdminOps() {
   if (!state.authToken) return;
 
   try {
-    const payload = await apiGet("admin/ops-summary");
+    const payload = await apiGet("dev/ops-summary");
     renderAdminOps(payload);
-    addLog("success", "Admin operations tersinkron dari Azure dan Cloudflare.");
+    addLog("success", "Developer monitoring tersinkron dari Azure dan Cloudflare.");
   } catch (error) {
-    renderAdminOpsEmpty(`Gagal memuat operasi admin: ${error.message}`);
-    addLog("warn", `Admin operations gagal dimuat. ${error.message}`);
+    renderAdminOpsEmpty(`Gagal memuat developer monitoring: ${error.message}`);
+    addLog("warn", `Developer monitoring gagal dimuat. ${error.message}`);
   }
 }
 
@@ -805,7 +848,7 @@ function renderAdminUsers(users) {
   el.adminUsersBody.innerHTML = users
     .map((user) => {
       const role = user.role || "user";
-      const nextRole = role === "admin" ? "user" : "admin";
+      const nextRole = nextRoleFor(role);
       const isCurrentUser = user.id === state.currentUser?.id;
       const isPreviewAdminPanel = state.isPreviewSession;
       const disableDemoteSelf = isCurrentUser && nextRole === "user";
@@ -1447,6 +1490,14 @@ function getPreviewUsers() {
       last_login_at: now,
     },
     {
+      id: "preview-dev",
+      name: "Preview Developer",
+      email: "dev@kelompok11cc.my.id",
+      role: "dev",
+      created_at: now,
+      last_login_at: now,
+    },
+    {
       id: "preview-user",
       name: "Preview User",
       email: "user@kelompok11cc.my.id",
@@ -1463,6 +1514,12 @@ function getPreviewUsers() {
       last_login_at: "",
     },
   ];
+}
+
+function nextRoleFor(role) {
+  if (role === "user") return "dev";
+  if (role === "dev") return "admin";
+  return "user";
 }
 
 function getPreviewOpsSummary() {
