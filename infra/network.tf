@@ -1,4 +1,7 @@
-# 1. Traffic Manager Profile (Perbaikan di Monitor Config)
+# ================================================================
+# Azure Traffic Manager - Backend Failover Routing
+# ================================================================
+
 resource "azurerm_traffic_manager_profile" "lb" {
   name                   = "tm-monitoring-k11"
   resource_group_name    = azurerm_resource_group.rg.name
@@ -10,41 +13,37 @@ resource "azurerm_traffic_manager_profile" "lb" {
   }
 
   monitor_config {
-    protocol                     = "HTTP"
-    port                         = 80
-    path                         = "/"
+    protocol                     = "HTTPS"
+    port                         = 443
+    path                         = "/api/hello"
     interval_in_seconds          = 30
     timeout_in_seconds           = 9
     tolerated_number_of_failures = 3
   }
+
+  tags = local.common_tags
 }
 
-# 2. Endpoint Frontend (VM)
-resource "azurerm_traffic_manager_external_endpoint" "vm_endpoint" {
-  name              = "endpoint-frontend-vm"
-  profile_id        = azurerm_traffic_manager_profile.lb.id
-  weight            = 100
-  target            = "frontend-monitoring-k11.southeastasia.cloudapp.azure.com"
-  endpoint_location = azurerm_resource_group.rg.location
-  priority          = 1 # Utama: Traffic bakal selalu ke sini dulu
-}
-
-# 3. Endpoint Backend (Function App)
+# Primary backend: Azure Functions
+# Nama endpoint sengaja tetap "endpoint-backend-function"
+# supaya tidak recreate endpoint lama.
 resource "azurerm_traffic_manager_external_endpoint" "func_endpoint" {
   name              = "endpoint-backend-function"
   profile_id        = azurerm_traffic_manager_profile.lb.id
-  weight            = 100
   target            = "${azurerm_linux_function_app.func_app.name}.azurewebsites.net"
-  endpoint_location = azurerm_resource_group.rg.location
-  priority          = 2 # Backup: Kalau VM mati, baru lari ke sini
+  endpoint_location = "Southeast Asia"
+
+  priority = 1
+  weight   = 100
 }
 
-# 4. Endpoint Storage Account
-resource "azurerm_traffic_manager_external_endpoint" "storage_endpoint" {
-  name              = "endpoint-storage-backup"
+# Secondary backend: Azure App Service backup
+resource "azurerm_traffic_manager_external_endpoint" "backup_appservice_endpoint" {
+  name              = "secondary-backend-appservice"
   profile_id        = azurerm_traffic_manager_profile.lb.id
-  weight            = 50
-  target            = "stwebdashboardk11.z23.web.core.windows.net"
-  endpoint_location = azurerm_resource_group.rg.location
-  priority          = 3 # Backup kedua: Kalau VM & Function mati
+  target            = "${azurerm_windows_web_app.backup_backend.name}.azurewebsites.net"
+  endpoint_location = "Southeast Asia"
+
+  priority = 2
+  weight   = 100
 }

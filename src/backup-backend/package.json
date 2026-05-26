@@ -1,0 +1,13 @@
+{
+  "name": "k11-backup-backend",
+  "version": "1.0.0",
+  "description": "Backup backend for Kelompok 11 cloud monitoring platform",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": "20.x"
+  },
+  "dependencies": {}
+}

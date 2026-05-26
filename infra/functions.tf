@@ -38,9 +38,12 @@ resource "azurerm_linux_function_app" "func_app" {
 
   lifecycle {
     ignore_changes = [
-      app_settings["WEBSITE_RUN_FROM_PACKAGE"],
-      app_settings["WEBSITE_ENABLE_SYNC_UPDATE_SITE"],
-      app_settings["SCM_RUN_FROM_PACKAGE"]
+      app_settings,
+      site_config[0].application_insights_connection_string,
+      site_config[0].app_service_logs,
+      site_config[0].cors,
+      tags["hidden-link: /app-insights-resource-id"],
+      storage_account_access_key
     ]
   }
 
@@ -74,7 +77,7 @@ resource "azurerm_linux_function_app" "func_app" {
     # Konfigurasi Admin Operations Dashboard
     "AZURE_SUBSCRIPTION_ID"      = var.azure_subscription_id
     "AZURE_RESOURCE_GROUP"       = azurerm_resource_group.rg.name
-    "AZURE_FUNCTION_APP_NAME"    = azurerm_linux_function_app.func_app.name
+    "AZURE_FUNCTION_APP_NAME"    = "func-backend-monitoring-k11"
     "AZURE_STORAGE_ACCOUNT_NAME" = azurerm_storage_account.func_storage.name
     "AZURE_COSMOS_ACCOUNT_NAME"  = azurerm_cosmosdb_account.cosmos_acc.name
     "AZURE_VM_NAME"              = var.azure_vm_name

@@ -10,7 +10,7 @@ resource "azurerm_monitor_action_group" "ops" {
   email_receiver {
     name                    = "team-email"
     email_address           = var.alert_email
-    use_common_alert_schema = true
+    use_common_alert_schema = false
   }
 
   tags = local.common_tags
@@ -129,6 +129,12 @@ resource "azurerm_monitor_diagnostic_setting" "cosmos_central_logs" {
   target_resource_id         = azurerm_cosmosdb_account.cosmos_acc.id
   log_analytics_workspace_id = var.log_analytics_workspace_id
 
+  lifecycle {
+    ignore_changes = [
+      metric
+    ]
+  }
+
   enabled_log {
     category = "DataPlaneRequests"
   }
@@ -147,6 +153,12 @@ resource "azurerm_monitor_diagnostic_setting" "storage_blob_central_logs" {
   name                       = "diag-storage-blob-central-logs"
   target_resource_id         = "${azurerm_storage_account.func_storage.id}/blobServices/default"
   log_analytics_workspace_id = var.log_analytics_workspace_id
+
+  lifecycle {
+    ignore_changes = [
+      metric
+    ]
+  }
 
   enabled_log {
     category = "StorageRead"
