@@ -1084,3 +1084,99 @@ tbody tr:hover td {
     display: none;
   }
 }
+
+/* ================================================================
+   Peningkatan Dashboard: Info Bar & Source Badges
+   ================================================================ */
+
+.role-info-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.85rem 1.1rem;
+  background: rgba(37, 99, 235, 0.06);
+  border: 1px solid rgba(37, 99, 235, 0.16);
+  border-radius: var(--radius);
+  margin-bottom: 1.25rem;
+  font-size: 0.86rem;
+  line-height: 1.45;
+  color: var(--muted-strong);
+  box-shadow: 0 4px 15px rgba(15, 23, 42, 0.02);
+  animation: slideIn 0.3s ease-out;
+}
+
+.role-info-bar.admin-theme {
+  background: rgba(15, 118, 110, 0.06);
+  border-color: rgba(15, 118, 110, 0.16);
+}
+
+.role-info-bar.dev-theme {
+  background: rgba(217, 119, 6, 0.06);
+  border-color: rgba(217, 119, 6, 0.16);
+}
+
+.role-info-icon {
+  font-size: 1.1rem;
+}
+
+.panel-title-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.2rem;
+}
+
+.panel-title-row h2 {
+  margin: 0 !important;
+}
+
+.source-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.18rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.68rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.badge-cosmos {
+  background: rgba(15, 118, 110, 0.12);
+  color: var(--teal);
+}
+
+.badge-cloudflare {
+  background: rgba(217, 119, 6, 0.12);
+  color: var(--amber);
+}
+
+.badge-azure {
+  background: rgba(37, 99, 235, 0.12);
+  color: var(--primary);
+}
+
+.badge-azure-monitor {
+  background: rgba(37, 99, 235, 0.15);
+  color: var(--primary-strong);
+  border: 1px solid rgba(37, 99, 235, 0.28);
+}
+
+.badge-cf-graphql {
+  background: rgba(217, 119, 6, 0.15);
+  color: var(--amber);
+  border: 1px solid rgba(217, 119, 6, 0.28);
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+

@@ -112,6 +112,12 @@
       </div>
       </section>
 
+      <!-- Info Bar Peran Aktif -->
+      <section class="role-info-bar" id="role-info-bar">
+        <span class="role-info-icon">💡</span>
+        <span id="role-info-text">Memuat panduan fitur untuk peran Anda...</span>
+      </section>
+
       <section class="stats-grid" id="user-stats-section" aria-label="Ringkasan data">
         <article class="stat-card accent-blue">
           <span class="stat-label">Total Record</span>
@@ -138,7 +144,10 @@
       <section class="panel admin-panel" id="admin-panel" hidden>
         <div class="panel-header panel-header-wide">
           <div>
-            <h2 id="admin-panel-title">Developer Monitoring</h2>
+            <div class="panel-title-row">
+              <h2 id="admin-panel-title">Developer Monitoring</h2>
+              <span class="source-badge badge-azure" id="admin-source-badge">Azure Monitor API</span>
+            </div>
             <p id="admin-panel-subtitle">CPU, memory, request rate, latency, error rate, dan centralized logging.</p>
           </div>
           <button class="btn btn-secondary btn-sm" id="btnAdminRefresh" type="button">
@@ -206,6 +215,30 @@
               </div>
             </div>
           </article>
+
+          <article class="ops-section">
+            <div class="ops-section-header">
+              <div>
+                <h3>Analisis & Optimasi Biaya (M4)</h3>
+                <p>Kebijakan retensi file mentah Azure Storage dan model serverless Cosmos DB.</p>
+              </div>
+              <span class="mono panel-meta">Est: USD 37.60/bln</span>
+            </div>
+            <div class="ops-health-list">
+              <div class="ops-health-item ops-ready">
+                <span>Blob Storage Lifecycle Policy (raw-data/)</span>
+                <strong>Aktif (Cool after 30d, delete after 180d)</strong>
+              </div>
+              <div class="ops-health-item ops-ready">
+                <span>Cosmos DB Serverless Mode</span>
+                <strong>Aktif (Pay-as-you-go / Low Cost)</strong>
+              </div>
+              <div class="ops-health-item ops-warn">
+                <span>Rekomendasi Optimasi: Azure VM</span>
+                <strong>Disarankan Hapus (VM Tidak Digunakan)</strong>
+              </div>
+            </div>
+          </article>
         </div>
 
         <div class="admin-ops-grid developer-metrics-grid" id="developer-metrics-grid" aria-label="Ringkasan monitoring developer">
@@ -265,6 +298,54 @@
               </div>
             </div>
           </article>
+
+          <article class="ops-section">
+            <div class="ops-section-header">
+              <div>
+                <h3>Sistem Alerting & Notifikasi (M4)</h3>
+                <p>Ambang batas metrik operasional terkonfigurasi di Azure Monitor.</p>
+              </div>
+              <span class="mono panel-meta">3 Rules</span>
+            </div>
+            <div class="ops-health-list">
+              <div class="ops-health-item ops-ready">
+                <span>alert-function-5xx-errors (HTTP 5xx > 5)</span>
+                <strong>Normal</strong>
+              </div>
+              <div class="ops-health-item ops-ready">
+                <span>alert-function-latency (Latency > 2s)</span>
+                <strong>Normal</strong>
+              </div>
+              <div class="ops-health-item ops-ready">
+                <span>alert-vm-cpu-high (CPU > 80%)</span>
+                <strong>Normal (VM Off)</strong>
+              </div>
+            </div>
+          </article>
+
+          <article class="ops-section">
+            <div class="ops-section-header">
+              <div>
+                <h3>Failover & Pemulihan (M5)</h3>
+                <p>Status perutean global Traffic Manager dan replikasi server backup.</p>
+              </div>
+              <span class="mono panel-meta">Standby</span>
+            </div>
+            <div class="ops-health-list">
+              <div class="ops-health-item ops-ready">
+                <span>Traffic Manager (tm-monitoring-k11)</span>
+                <strong>Aktif (Geographic)</strong>
+              </div>
+              <div class="ops-health-item ops-ready">
+                <span>App Service Backup (app-backend-backup-k11)</span>
+                <strong>Running (Standby)</strong>
+              </div>
+              <div class="ops-health-item ops-ready">
+                <span>Cosmos DB Session Consistent</span>
+                <strong>Sinkron</strong>
+              </div>
+            </div>
+          </article>
         </div>
 
         <div class="admin-users-section" id="admin-users-section" hidden>
@@ -301,7 +382,10 @@
         <article class="panel chart-panel">
           <div class="panel-header">
             <div>
-              <h2>Distribusi Status</h2>
+              <div class="panel-title-row">
+                <h2>Distribusi Status</h2>
+                <span class="source-badge badge-cosmos">Cosmos DB</span>
+              </div>
               <p>Komposisi data berdasarkan hasil pemrosesan.</p>
             </div>
             <span class="mono panel-meta" id="chart-updated">-</span>
@@ -314,7 +398,10 @@
         <article class="panel upload-panel">
           <div class="panel-header">
             <div>
-              <h2>Upload Data</h2>
+              <div class="panel-title-row">
+                <h2>Upload Data</h2>
+                <span class="source-badge badge-cloudflare">Cloudflare Proxy</span>
+              </div>
               <p>Kirim batch data melalui backend proxy yang aman.</p>
             </div>
           </div>
@@ -352,7 +439,10 @@
       <section class="panel science-panel" id="science-panel" aria-labelledby="science-title">
         <div class="panel-header panel-header-wide">
           <div>
-            <h2 id="science-title">Data Science Processing</h2>
+            <div class="panel-title-row">
+              <h2 id="science-title">Data Science Processing</h2>
+              <span class="source-badge badge-azure">Azure Function API</span>
+            </div>
             <p>Profiling, quality check, cleaning otomatis, dan chart eksplorasi data.</p>
           </div>
           <div class="toolbar">
@@ -447,7 +537,10 @@
       <section class="panel data-panel" id="data-panel">
         <div class="panel-header panel-header-wide">
           <div>
-            <h2>Data Records</h2>
+            <div class="panel-title-row">
+              <h2>Data Records</h2>
+              <span class="source-badge badge-cosmos">Cosmos DB</span>
+            </div>
             <p>Record terbaru dari Cosmos DB setelah user berhasil login.</p>
           </div>
           <div class="toolbar">

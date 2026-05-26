@@ -350,6 +350,12 @@ function showApp() {
 function logout() {
   clearSession();
   resetSelectedFile();
+  }
+}
+
+function logout() {
+  clearSession();
+  resetSelectedFile();
   setConnection("", "Checking");
   updateRoleUi();
   showAuth();
@@ -393,6 +399,33 @@ function updateRoleUi() {
     : admin
       ? "Kelola akses, role, dan ringkasan operasional tanpa fitur data processing."
     : "Frontend berjalan di Cloudflare Pages, backend dan data pipeline berjalan di Microsoft Azure.";
+
+  // Peningkatan UI: Info Bar & Badge Dinamis
+  const infoBar = document.getElementById("role-info-bar");
+  const infoText = document.getElementById("role-info-text");
+  const adminBadge = document.getElementById("admin-source-badge");
+
+  if (infoBar && infoText) {
+    infoBar.classList.remove("admin-theme", "dev-theme");
+    if (admin) {
+      infoBar.classList.add("admin-theme");
+      infoText.innerHTML = `🔑 <strong>Mode Administrator Aktif:</strong> Anda memiliki otoritas penuh untuk mengelola daftar akun pengguna, mengubah peran/hak akses platform (User, Developer, Admin), serta memantau data operasional global di database Azure Cosmos DB.`;
+      if (adminBadge) {
+        adminBadge.textContent = "Cosmos DB Users";
+        adminBadge.className = "source-badge badge-cosmos";
+      }
+    } else if (dev) {
+      infoBar.classList.add("dev-theme");
+      infoText.innerHTML = `📊 <strong>Mode Developer Monitoring Aktif:</strong> Dashboard ini dirancang khusus untuk memantau metrik performa infrastruktur serverless Azure Functions (CPU, Memory, Latency) dan trafik jaringan CDN Cloudflare via API GraphQL secara real-time.`;
+      if (adminBadge) {
+        adminBadge.textContent = "Azure Monitor & Cloudflare";
+        adminBadge.className = "source-badge badge-azure-monitor";
+      }
+    } else {
+      infoText.innerHTML = `📥 <strong>Mode Standard User Aktif:</strong> Anda dapat mengunggah berkas data telemetri (JSON, CSV, atau Excel) untuk dianalisis kualitas datanya menggunakan pemicu serverless Azure Functions sebelum disimpan ke database Cosmos DB.`;
+    }
+  }
+
   if (!dev) {
     renderAdminOpsEmpty("Akses developer diperlukan");
   }
