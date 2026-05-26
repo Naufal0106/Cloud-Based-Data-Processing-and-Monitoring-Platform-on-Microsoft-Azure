@@ -354,12 +354,6 @@ function showApp() {
 function logout() {
   clearSession();
   resetSelectedFile();
-  }
-}
-
-function logout() {
-  clearSession();
-  resetSelectedFile();
   setConnection("", "Checking");
   updateRoleUi();
   showAuth();
