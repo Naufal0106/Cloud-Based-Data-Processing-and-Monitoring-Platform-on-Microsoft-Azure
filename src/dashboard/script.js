@@ -797,6 +797,24 @@ function renderAdminOps(payload = {}) {
   el.adminCloudflareStatus.textContent = statusLabel(cloudflare);
   el.adminAzureStatus.textContent = statusLabel(azure);
 
+  // Render Cloudflare CDN Analytics in detail (UPR Project specific)
+  const cfTotals = cloudflare.totals || {};
+  const cfWindow = cloudflare.window || "7d";
+
+  const elCfWindow = document.getElementById("cf-analytics-window");
+  const elCfRequests = document.getElementById("cf-total-requests");
+  const elCfViews = document.getElementById("cf-page-views");
+  const elCfVisitors = document.getElementById("cf-unique-visitors");
+  const elCfRatio = document.getElementById("cf-cache-ratio");
+  const elCfThreats = document.getElementById("cf-threats");
+
+  if (elCfWindow) elCfWindow.textContent = cfWindow;
+  if (elCfRequests) elCfRequests.textContent = cloudflare.configured ? formatCompact(cfTotals.requests) : "-";
+  if (elCfViews) elCfViews.textContent = cloudflare.configured ? formatCompact(cfTotals.page_views) : "-";
+  if (elCfVisitors) elCfVisitors.textContent = cloudflare.configured ? formatCompact(cfTotals.unique_visitors) : "-";
+  if (elCfRatio) elCfRatio.textContent = cloudflare.configured ? formatPercent(cfTotals.cache_ratio) : "-";
+  if (elCfThreats) elCfThreats.textContent = cloudflare.configured ? formatCompact(cfTotals.threats) : "-";
+
   renderAdminTrafficChart(azure);
   renderAdminOpsHealth(azure, cloudflare);
 }
@@ -814,6 +832,19 @@ function renderAdminOpsEmpty(message) {
   el.adminErrorRateSub.textContent = "HTTP 5xx";
   el.adminCloudflareStatus.textContent = "-";
   el.adminAzureStatus.textContent = "-";
+
+  const elCfRequests = document.getElementById("cf-total-requests");
+  const elCfViews = document.getElementById("cf-page-views");
+  const elCfVisitors = document.getElementById("cf-unique-visitors");
+  const elCfRatio = document.getElementById("cf-cache-ratio");
+  const elCfThreats = document.getElementById("cf-threats");
+
+  if (elCfRequests) elCfRequests.textContent = "-";
+  if (elCfViews) elCfViews.textContent = "-";
+  if (elCfVisitors) elCfVisitors.textContent = "-";
+  if (elCfRatio) elCfRatio.textContent = "-";
+  if (elCfThreats) elCfThreats.textContent = "-";
+
   renderAdminTrafficChart({});
   el.adminOpsHealth.innerHTML = `
     <div class="ops-health-item">
