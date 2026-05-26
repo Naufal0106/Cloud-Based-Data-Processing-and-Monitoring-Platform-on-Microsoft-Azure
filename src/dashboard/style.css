@@ -1245,3 +1245,73 @@ tbody tr:hover td {
   font-weight: 400;
 }
 
+/* ================================================================
+   Export Button Styling
+   ================================================================ */
+
+.btn-export {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--teal);
+  transition:
+    background 0.18s ease,
+    color 0.18s ease,
+    border-color 0.18s ease,
+    transform 0.18s ease;
+}
+
+.btn-export:hover:not(:disabled) {
+  background: rgba(15, 118, 110, 0.07);
+  border-color: var(--teal);
+  transform: translateY(-1px);
+}
+
+.btn-export:disabled {
+  color: var(--muted);
+  opacity: 0.5;
+}
+
+/* Upload progress bar */
+.upload-progress-wrap {
+  margin-top: 0.75rem;
+  display: none;
+}
+
+.upload-progress-wrap.visible {
+  display: block;
+}
+
+.upload-progress-label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.35rem;
+  color: var(--muted-strong);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.upload-progress-bar-track {
+  width: 100%;
+  height: 6px;
+  background: var(--surface-soft);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.upload-progress-bar-fill {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, var(--teal), var(--primary));
+  border-radius: 999px;
+  transition: width 0.3s ease;
+  animation: progressShimmer 1.5s ease-in-out infinite;
+}
+
+@keyframes progressShimmer {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.75; }
+}
+
+

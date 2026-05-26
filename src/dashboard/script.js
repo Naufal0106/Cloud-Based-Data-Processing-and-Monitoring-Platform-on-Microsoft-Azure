@@ -82,6 +82,8 @@ function cacheElements() {
     btnCleanUpload: document.getElementById("btnCleanUpload"),
     btnRawUpload: document.getElementById("btnRawUpload"),
     btnAnalyticsRefresh: document.getElementById("btnAnalyticsRefresh"),
+    btnExportReport: document.getElementById("btnExportReport"),
+    btnExportData: document.getElementById("btnExportData"),
     btnLogout: document.getElementById("btnLogout"),
     btnAdminRefresh: document.getElementById("btnAdminRefresh"),
     currentUserLabel: document.getElementById("current-user-label"),
@@ -171,6 +173,8 @@ function bindEvents() {
   el.btnRawUpload.addEventListener("click", () => uploadFile(false));
   el.btnAnalyticsRefresh.addEventListener("click", fetchAnalytics);
   el.btnAdminRefresh.addEventListener("click", refreshRolePanel);
+  el.btnExportReport.addEventListener("click", exportReport);
+  el.btnExportData.addEventListener("click", exportData);
   el.adminUsersBody.addEventListener("click", handleAdminUserAction);
   el.dropzone.addEventListener("click", () => el.fileInput.click());
   el.fileInput.addEventListener("change", (event) => {
@@ -1191,6 +1195,11 @@ function renderScienceAnalysis(payload = {}) {
   renderScienceColumns(profile.columns || []);
   renderScienceCharts(charts);
   renderScienceCorrelation(payload.correlation || {});
+
+  // Enable export button when analysis is available
+  if (el.btnExportReport) {
+    el.btnExportReport.disabled = false;
+  }
 }
 
 function renderScienceEmpty(reason) {
@@ -1208,6 +1217,11 @@ function renderScienceEmpty(reason) {
   `;
   renderScienceCharts({});
   renderScienceCorrelation({});
+
+  // Disable export button when no analysis
+  if (el.btnExportReport) {
+    el.btnExportReport.disabled = true;
+  }
 }
 
 function renderScienceCorrelation(correlation = {}) {
@@ -2050,4 +2064,156 @@ if (document.readyState === "loading") {
   document.addEventListener("DOMContentLoaded", init);
 } else {
   init();
+}
+
+// ============================================================
+//  CSV / EXPORT FUNCTIONS
+// ============================================================
+
+function exportReport() {
+  const analysis = state.analysis;
+  if (!analysis) {
+    showToast("Tidak ada analisis untuk di-export.", "warn");
+    return;
+  }
+
+  const profile = analysis.profile || {};
+  const quality = analysis.quality || {};
+  const correlation = analysis.correlation || {};
+  const timestamp = new Date().toISOString().slice(0, 19).replace(/[T:]/g, "-");
+  const filename = `data-report-${timestamp}.csv`;
+
+  const sections = [];
+
+  // --- Section 1: Summary ---
+  sections.push(["# RINGKASAN KUALITAS DATA"]);
+  sections.push(["Sumber File", escapeForCsv(analysis.source_file || "-")]);
+  sections.push(["Total Record", toNumber(profile.record_count)]);
+  sections.push(["Total Kolom", toNumber(profile.column_count)]);
+  sections.push(["Quality Score", `${quality.score || "-"}/100`]);
+  sections.push(["Missing Cells", toNumber(quality.missing_cells ?? profile.missing_cells)]);
+  sections.push(["Duplicate Rows", toNumber(quality.duplicate_rows ?? profile.duplicate_rows)]);
+  sections.push(["Numeric Columns", Array.isArray(profile.numeric_columns) ? profile.numeric_columns.length : "-"]);
+  sections.push(["Data Bermasalah", quality.dirty ? "Ya" : "Tidak"]);
+  sections.push(["Issue Count", toNumber(quality.issue_count)]);
+  sections.push(["Dianalisis Pada", new Date().toLocaleString("id-ID")]);
+  sections.push([]);
+
+  // --- Section 2: Quality Issues ---
+  sections.push(["# QUALITY ISSUES"]);
+  const issues = quality.issues || [];
+  const recs = analysis.recommendations || [];
+  if (issues.length) {
+    sections.push(["Severity", "Pesan"]);
+    issues.forEach((issue) => {
+      sections.push([escapeForCsv(issue.severity || "info"), escapeForCsv(issue.message || "")]);
+    });
+  } else if (recs.length) {
+    sections.push(["Rekomendasi"]);
+    recs.forEach((rec) => sections.push([escapeForCsv(rec)]));
+  } else {
+    sections.push(["Data siap diproses."]);
+  }
+  sections.push([]);
+
+  // --- Section 3: Column Profile ---
+  const columns = profile.columns || [];
+  if (columns.length) {
+    sections.push(["# PROFIL KOLOM"]);
+    sections.push(["Kolom", "Tipe Data", "Missing Count", "Missing %", "Unique Count", "Min", "Mean", "Max", "Top Values"]);
+    columns.forEach((col) => {
+      const topVals = Array.isArray(col.top_values)
+        ? col.top_values.map((item) => `${item.value}(${item.count})`).join("; ")
+        : "";
+      const numMin = col.numeric?.min ?? "";
+      const numMean = col.numeric?.mean ?? "";
+      const numMax = col.numeric?.max ?? "";
+      sections.push([
+        escapeForCsv(col.name),
+        escapeForCsv(col.data_type),
+        toNumber(col.missing_count),
+        `${toNumber(col.missing_pct)}%`,
+        toNumber(col.unique_count),
+        numMin,
+        numMean,
+        numMax,
+        escapeForCsv(topVals),
+      ]);
+    });
+    sections.push([]);
+  }
+
+  // --- Section 4: Correlation Matrix ---
+  const corrLabels = correlation.labels || [];
+  const corrMatrix = correlation.matrix || [];
+  if (corrLabels.length && corrMatrix.length) {
+    sections.push(["# MATRIKS KORELASI PEARSON"]);
+    sections.push(["Variabel", ...corrLabels.map(escapeForCsv)]);
+    corrLabels.forEach((label, rIdx) => {
+      const row = [escapeForCsv(label)];
+      corrLabels.forEach((_, cIdx) => {
+        const val = corrMatrix[rIdx]?.[cIdx];
+        row.push(val !== undefined && val !== null ? Number(val).toFixed(4) : "");
+      });
+      sections.push(row);
+    });
+  }
+
+  const csvContent = sections.map((row) => row.join(",")).join("\r\n");
+  downloadCsv(csvContent, filename);
+  showToast("Report CSV berhasil di-download!", "success");
+  addLog("success", `Export report: ${filename}`);
+}
+
+function exportData() {
+  const data = getFilteredData();
+  if (!data.length) {
+    showToast("Tidak ada data untuk di-export.", "warn");
+    return;
+  }
+
+  const timestamp = new Date().toISOString().slice(0, 19).replace(/[T:]/g, "-");
+  const filename = `data-records-${timestamp}.csv`;
+
+  const headers = ["ID", "Waktu Proses", "Device ID", "Kategori", "Status", "Ringkasan", "Sumber File"];
+  const rows = data.map((record) => [
+    escapeForCsv(record.id || "-"),
+    escapeForCsv(record.processed_at ? new Date(record.processed_at).toLocaleString("id-ID") : "-"),
+    escapeForCsv(record.deviceId || "-"),
+    escapeForCsv(record.category || "-"),
+    escapeForCsv(record.status || "-"),
+    escapeForCsv(record.summary || "-"),
+    escapeForCsv(record.source_file ? String(record.source_file).split("/").pop() : "-"),
+  ]);
+
+  const csvContent = [headers.join(","), ...rows.map((row) => row.join(","))].join("\r\n");
+  downloadCsv(csvContent, filename);
+  showToast(`${data.length} record berhasil di-export!`, "success");
+  addLog("success", `Export data: ${filename} (${data.length} records)`);
+}
+
+function downloadCsv(content, filename) {
+  // Add UTF-8 BOM so Excel auto-detects encoding
+  const bom = "\uFEFF";
+  const blob = new Blob([bom + content], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  link.style.display = "none";
+  document.body.appendChild(link);
+  link.click();
+  setTimeout(() => {
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  }, 200);
+}
+
+function escapeForCsv(value) {
+  const str = String(value === undefined || value === null ? "" : value);
+  // If value contains comma, newline, or double-quote — wrap in quotes and escape inner quotes
+  if (str.includes(",") || str.includes("\n") || str.includes('"') || str.includes(";")) {
+    return `"${str.replace(/"/g, '""')}"`;
+  }
+  return str;
 }

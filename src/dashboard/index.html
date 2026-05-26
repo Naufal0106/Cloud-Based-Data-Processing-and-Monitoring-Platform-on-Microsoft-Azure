@@ -11,7 +11,7 @@
       rel="stylesheet"
     />
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-    <link rel="stylesheet" href="style.css?v=20260518-admin-ops" />
+    <link rel="stylesheet" href="style.css?v=20260526-export" />
   </head>
   <body>
     <section class="auth-screen" id="auth-screen">
@@ -479,6 +479,9 @@
           </div>
           <div class="toolbar">
             <span class="mono panel-meta" id="science-source">Belum ada analisis</span>
+            <button class="btn btn-secondary btn-sm btn-export" id="btnExportReport" type="button" disabled>
+              ⬇ Export Report CSV
+            </button>
             <button class="btn btn-secondary btn-sm" id="btnAnalyticsRefresh" type="button">
               Reload Analitik
             </button>
@@ -616,6 +619,9 @@
                 <option value="generic">Generic</option>
               </select>
             </label>
+            <button class="btn btn-secondary btn-sm btn-export" id="btnExportData" type="button">
+              ⬇ Export CSV
+            </button>
             <button class="btn btn-secondary btn-sm" id="btnDataRefresh" type="button">
               Reload
             </button>
@@ -670,7 +676,7 @@
       (function loadConfigAndApp() {
         function loadApp() {
           const appScript = document.createElement("script");
-          appScript.src = "script.js?v=20260518-admin-ops";
+          appScript.src = "script.js?v=20260526-export";
           document.body.appendChild(appScript);
         }
 
