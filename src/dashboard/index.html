@@ -441,7 +441,7 @@
           <button class="upload-zone" id="dropzone" type="button">
             <span class="upload-icon">CSV</span>
             <span class="upload-title">Pilih atau drop file data</span>
-            <span class="upload-copy">Menerima JSON, CSV, XLSX, dan XLS. Maksimal 5 MB.</span>
+            <span class="upload-copy">Menerima JSON, CSV, XLSX, dan XLS. Maksimal 100 MB.</span>
           </button>
           <input
             type="file"
@@ -516,6 +516,15 @@
           </div>
           <div class="science-chart">
             <div>
+              <h3>Kategori Data</h3>
+              <p>Distribusi kategori telemetry (sensor, log, generic).</p>
+            </div>
+            <div class="mini-chart-wrap">
+              <canvas id="scienceCategoryChart"></canvas>
+            </div>
+          </div>
+          <div class="science-chart">
+            <div>
               <h3>Missing Value</h3>
               <p>Kolom dengan nilai kosong paling banyak.</p>
             </div>
@@ -562,6 +571,19 @@
                 </tbody>
               </table>
             </div>
+          </div>
+        </div>
+
+        <div class="science-correlation" id="science-correlation-wrap" hidden style="margin-top: 1.5rem; border-top: 1px solid var(--border); padding-top: 1.5rem;">
+          <h3 style="margin-top: 0; margin-bottom: 0.5rem; font-size: 0.88rem;">Matriks Korelasi Pearson (Kolom Numerik)</h3>
+          <p style="color: var(--muted); font-size: 0.82rem; margin-top: 0; margin-bottom: 1rem;">
+            Analisis korelasi linier antar variabel numerik utama. Nilai mendekati +1 menunjukkan korelasi positif kuat, -1 menunjukkan korelasi negatif kuat, dan 0 menunjukkan tidak ada hubungan linier.
+          </p>
+          <div class="table-wrap correlation-table-wrap">
+            <table class="correlation-table">
+              <thead id="science-correlation-thead"></thead>
+              <tbody id="science-correlation-tbody"></tbody>
+            </table>
           </div>
         </div>
       </section>

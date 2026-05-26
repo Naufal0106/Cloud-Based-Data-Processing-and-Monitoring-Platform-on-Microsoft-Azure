@@ -473,7 +473,7 @@ h1 {
 
 .science-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   gap: 1rem;
   align-items: stretch;
 }
@@ -1178,5 +1178,70 @@ tbody tr:hover td {
     opacity: 1;
     transform: translateY(0);
   }
+}
+
+/* Pearson Correlation Matrix Heatmap Table Styling */
+.correlation-table-wrap {
+  overflow-x: auto;
+  max-width: 100%;
+  margin-top: 0.5rem;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
+}
+
+.correlation-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.82rem;
+  text-align: center;
+}
+
+.correlation-table th,
+.correlation-table td {
+  padding: 0.75rem 0.5rem;
+  border: 1px solid var(--border);
+  min-width: 110px;
+  height: 48px;
+}
+
+.correlation-table th {
+  background: var(--surface-soft);
+  font-weight: 700;
+  color: var(--muted-strong);
+  font-family: var(--font-ui);
+}
+
+.correlation-table td.col-header {
+  background: var(--surface-soft);
+  font-weight: 700;
+  color: var(--muted-strong);
+  text-align: left;
+  padding-left: 0.85rem;
+  min-width: 130px;
+}
+
+.correlation-cell {
+  font-weight: 700;
+  font-family: var(--font-mono);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+}
+
+.correlation-cell:not(.empty) {
+  cursor: help;
+}
+
+.correlation-cell:not(.empty):hover {
+  transform: scale(1.04);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+  z-index: 5;
+  border-radius: 4px;
+}
+
+.correlation-cell.empty {
+  color: var(--muted);
+  background: var(--surface-soft);
+  font-weight: 400;
 }
 

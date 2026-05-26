@@ -29,8 +29,8 @@ app = func.FunctionApp()
 ALLOWED_STATUS = {"processed", "anomaly", "error"}
 DEFAULT_LIMIT = 50
 MAX_LIMIT = 200
-MAX_UPLOAD_BYTES = 5 * 1024 * 1024
-MAX_UPLOAD_RECORDS = 1000
+MAX_UPLOAD_BYTES = 100 * 1024 * 1024
+MAX_UPLOAD_RECORDS = 1000000
 MAX_ANALYTICS_RECORDS = 500
 MAX_PROFILE_COLUMNS = 40
 MAX_CHART_BUCKETS = 8
@@ -242,10 +242,17 @@ def upload_data(req: func.HttpRequest) -> func.HttpResponse:
         attach_owner(processed, claims)
         saved_count = save_to_cosmos(processed)
         analysis = build_data_science_payload(data, source_file, processed)
+
+        total_count = len(processed)
+        if total_count > saved_count:
+            msg = f"{saved_count} dari {total_count} record berhasil diproses dan disimpan ke database (dibatasi demi stabilitas)."
+        else:
+            msg = f"{saved_count} record berhasil diproses dan disimpan."
+
         return json_response(
             {
                 "success": True,
-                "message": f"{saved_count} record berhasil diproses dan disimpan.",
+                "message": msg,
                 "count": saved_count,
                 "cleaned": clean_requested,
                 "cleaning": cleaning,
@@ -1714,8 +1721,10 @@ def enrich_log_record(record: dict[str, Any], item: dict[str, Any]) -> None:
 
 def save_to_cosmos(records: list[dict[str, Any]]) -> int:
     container = get_cosmos_container()
+    save_limit = 2000
+    records_to_save = records[:save_limit]
 
-    for record in records:
+    for record in records_to_save:
         container.upsert_item(record)
         logging.info(
             "[Cosmos] Disimpan: id=%s deviceId=%s status=%s",
@@ -1724,7 +1733,7 @@ def save_to_cosmos(records: list[dict[str, Any]]) -> int:
             record["status"],
         )
 
-    return len(records)
+    return len(records_to_save)
 
 
 def count_items(

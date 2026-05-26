@@ -1,5 +1,5 @@
 const DEFAULT_API_BASE = "/api";
-const MAX_UPLOAD_BYTES = 5 * 1024 * 1024;
+const MAX_UPLOAD_BYTES = 100 * 1024 * 1024;
 const SUPPORTED_UPLOAD_EXTENSIONS = [".json", ".csv", ".xlsx", ".xls"];
 const AUTO_REFRESH_MS = 30000;
 const AUTH_TOKEN_KEY = "k11_auth_token_v2";
@@ -142,8 +142,12 @@ function cacheElements() {
     scienceIssuesList: document.getElementById("science-issues-list"),
     scienceColumnsBody: document.getElementById("science-columns-tbody"),
     scienceStatusChart: document.getElementById("scienceStatusChart"),
+    scienceCategoryChart: document.getElementById("scienceCategoryChart"),
     scienceMissingChart: document.getElementById("scienceMissingChart"),
     scienceNumericChart: document.getElementById("scienceNumericChart"),
+    scienceCorrelationWrap: document.getElementById("science-correlation-wrap"),
+    scienceCorrelationThead: document.getElementById("science-correlation-thead"),
+    scienceCorrelationTbody: document.getElementById("science-correlation-tbody"),
     tableBody: document.getElementById("data-tbody"),
     logStream: document.getElementById("log-stream"),
     toast: document.getElementById("toast"),
@@ -1192,6 +1196,7 @@ function renderScienceAnalysis(payload = {}) {
   renderScienceIssues(quality.issues || [], payload.recommendations || []);
   renderScienceColumns(profile.columns || []);
   renderScienceCharts(charts);
+  renderScienceCorrelation(payload.correlation || {});
 }
 
 function renderScienceEmpty(reason) {
@@ -1208,6 +1213,70 @@ function renderScienceEmpty(reason) {
     </tr>
   `;
   renderScienceCharts({});
+  renderScienceCorrelation({});
+}
+
+function renderScienceCorrelation(correlation = {}) {
+  const wrap = el.scienceCorrelationWrap;
+  const thead = el.scienceCorrelationThead;
+  const tbody = el.scienceCorrelationTbody;
+  if (!wrap || !thead || !tbody) return;
+
+  const labels = correlation.labels || [];
+  const matrix = correlation.matrix || [];
+
+  if (!labels.length || !matrix.length) {
+    wrap.hidden = true;
+    thead.innerHTML = "";
+    tbody.innerHTML = "";
+    return;
+  }
+
+  wrap.hidden = false;
+
+  // Render header row
+  let headerHtml = "<tr><th>Variabel</th>";
+  labels.forEach(label => {
+    headerHtml += `<th>${escapeHtml(label)}</th>`;
+  });
+  headerHtml += "</tr>";
+  thead.innerHTML = headerHtml;
+
+  // Render rows
+  let bodyHtml = "";
+  labels.forEach((leftLabel, rIdx) => {
+    bodyHtml += `<tr><td class="col-header">${escapeHtml(leftLabel)}</td>`;
+    labels.forEach((rightLabel, cIdx) => {
+      const val = matrix[rIdx] && matrix[rIdx][cIdx] !== undefined && matrix[rIdx][cIdx] !== null
+        ? Number(matrix[rIdx][cIdx])
+        : null;
+
+      if (val === null) {
+        bodyHtml += `<td class="correlation-cell empty">-</td>`;
+      } else {
+        let bgStyle = "";
+        let textColor = "var(--text)";
+        const absVal = Math.abs(val);
+        if (val > 0) {
+          bgStyle = `background-color: rgba(37, 99, 235, ${absVal * 0.85})`;
+          if (absVal > 0.5) textColor = "#ffffff";
+        } else if (val < 0) {
+          bgStyle = `background-color: rgba(220, 38, 38, ${absVal * 0.85})`;
+          if (absVal > 0.5) textColor = "#ffffff";
+        } else {
+          bgStyle = "background-color: var(--surface-soft)";
+        }
+        
+        bodyHtml += `
+          <td class="correlation-cell" style="${bgStyle}; color: ${textColor};" title="Korelasi antara ${escapeHtml(leftLabel)} dan ${escapeHtml(rightLabel)}: ${val.toFixed(4)}">
+            ${val.toFixed(2)}
+          </td>
+        `;
+      }
+    });
+    bodyHtml += "</tr>";
+  });
+  tbody.innerHTML = bodyHtml;
 }
 
 function renderScienceIssues(issues, recommendations) {
@@ -1278,12 +1347,28 @@ function renderScienceCharts(charts) {
   replaceScienceChart("status", el.scienceStatusChart, {
     type: "bar",
     data: {
-      labels: statusChart.labels.length ? statusChart.labels : categoryChart.labels,
+      labels: statusChart.labels,
       datasets: [
         {
           label: "Jumlah",
-          data: statusChart.data.length ? statusChart.data : categoryChart.data,
+          data: statusChart.data,
           backgroundColor: "#2563eb",
+          borderRadius: 6,
+        },
+      ],
+    },
+    options: scienceChartOptions(),
+  });
+
+  replaceScienceChart("category", el.scienceCategoryChart, {
+    type: "bar",
+    data: {
+      labels: categoryChart.labels,
+      datasets: [
+        {
+          label: "Jumlah",
+          data: categoryChart.data,
+          backgroundColor: "#0f766e",
           borderRadius: 6,
         },
       ],
@@ -1374,7 +1459,7 @@ function handleFile(file) {
 
   if (file.size > MAX_UPLOAD_BYTES) {
     resetSelectedFile();
-    showToast("Ukuran file maksimal 5 MB", "error");
+    showToast(`Ukuran file maksimal ${formatBytes(MAX_UPLOAD_BYTES)}`, "error");
     return;
   }
 
