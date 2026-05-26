@@ -146,6 +146,12 @@ resource "azurerm_key_vault_secret" "cosmos_conn" {
   key_vault_id = azurerm_key_vault.kv.id
 
   depends_on = [azurerm_key_vault.kv]
+  lifecycle {
+    ignore_changes = [
+      value,
+      tags
+    ]
+  }
 }
 
 resource "azurerm_key_vault_secret" "auth_token_secret" {

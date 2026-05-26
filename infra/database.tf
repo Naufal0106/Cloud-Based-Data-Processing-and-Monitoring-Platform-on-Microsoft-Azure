@@ -44,6 +44,12 @@ resource "azurerm_cosmosdb_sql_container" "container_telemetry" {
   # Partition Key (Gunakan versi jamak agar cocok dengan tipe data list/tuple [])
   partition_key_paths = ["/deviceId"]
 
+  lifecycle {
+    ignore_changes = [
+      indexing_policy
+    ]
+  }
+
   # Indexing policy didefinisikan eksplisit agar sinkron dengan state Azure
   indexing_policy {
     indexing_mode = "consistent"
@@ -69,8 +75,10 @@ resource "azurerm_cosmosdb_sql_container" "container_users" {
 
   partition_key_paths = ["/email"]
 
-  unique_key {
-    paths = ["/email"]
+  lifecycle {
+    ignore_changes = [
+      indexing_policy
+    ]
   }
 
   indexing_policy {

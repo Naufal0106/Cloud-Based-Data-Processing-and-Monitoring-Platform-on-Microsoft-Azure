@@ -51,6 +51,18 @@ variable "azure_vm_name" {
   default     = "VM-Web-Kelompok11"
 }
 
+variable "backup_app_service_name" {
+  description = "Nama global Azure App Service untuk backup backend"
+  type        = string
+  default     = "app-backend-backup-k11"
+}
+
+variable "backup_app_service_sku" {
+  description = "SKU App Service Plan untuk backup backend. Gunakan F1 agar low cost, atau B1 jika F1 tidak tersedia."
+  type        = string
+  default     = "F1"
+}
+
 variable "id_rendy" { type = string }
 variable "id_arifin" { type = string }
 variable "id_zhykwa" { type = string }
