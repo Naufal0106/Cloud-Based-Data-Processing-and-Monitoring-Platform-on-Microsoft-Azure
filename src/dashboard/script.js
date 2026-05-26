@@ -1084,6 +1084,7 @@ function getFilteredData() {
 }
 
 function initChart() {
+  if (!window.Chart) return;
   const ctx = document.getElementById("statusChart").getContext("2d");
   state.chart = new Chart(ctx, {
     type: "doughnut",
