@@ -654,6 +654,11 @@ async function fetchAnalytics() {
 
   if (!state.authToken) return;
 
+  // Don't overwrite if a file-specific analysis is currently displayed
+  if (state.analysis && state.analysis.source_file && state.analysis.source_file !== "cosmos-telemetry") {
+    return;
+  }
+
   try {
     el.btnAnalyticsRefresh.disabled = true;
     const payload = await apiGet("analytics", { limit: 200 });
@@ -1559,7 +1564,7 @@ async function uploadFile(cleanData = false) {
     }
     setBusy(true);
     el.btnUpload.textContent = "Memproses...";
-    el.btnCleanUpload.textContent = cleanData ? "Membersihkan..." : "Bersihkan & Proses";
+    el.btnCleanUpload.textContent = cleanData ? "Membersihkan..." : "Bersihkan";
     addLog(
       "info",
       cleanData
@@ -1604,9 +1609,7 @@ function updateUploadButton() {
   el.btnCleanUpload.disabled = state.isBusy || !hasFile || !hasAnalysis;
   el.btnUpload.textContent = state.isBusy ? "Memproses..." : "Analisis Data";
   el.btnRawUpload.textContent = "Proses Apa Adanya";
-  el.btnCleanUpload.textContent = hasAnalysis && state.selectedFileAnalysis?.quality?.dirty
-    ? "Bersihkan & Proses"
-    : "Proses Data Bersih";
+  el.btnCleanUpload.textContent = "Bersihkan";
 }
 
 function resetSelectedFile(options = {}) {
