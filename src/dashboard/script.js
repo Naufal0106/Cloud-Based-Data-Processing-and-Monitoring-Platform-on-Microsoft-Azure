@@ -1200,7 +1200,7 @@ function renderScienceAnalysis(payload = {}) {
   renderScienceIssues(quality.issues || [], payload.recommendations || []);
   renderScienceColumns(profile.columns || []);
   renderScienceCharts(charts);
-  renderScienceCorrelation(payload.correlation || {});
+  renderScienceCorrelation(payload.correlation || (payload.charts && payload.charts.correlation) || {});
 
   // Enable export button when analysis is available
   if (el.btnExportReport) {
