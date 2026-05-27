@@ -929,6 +929,7 @@ def build_data_science_payload(
         "cleaning": cleaning,
         "recommendations": build_cleaning_recommendations(quality, cleaning),
         "charts": build_chart_payload(records, processed_records or []),
+        "correlation": correlation_matrix(profile, records),
         "sample": records[:5],
         "generated_at": datetime.now(timezone.utc).isoformat(),
     }
