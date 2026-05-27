@@ -1578,6 +1578,9 @@ async function uploadFile(cleanData = false) {
     const payload = await apiPostForm("upload", formData, {
       params: cleanData ? { clean: "true" } : {},
     });
+    if (!payload.source_file && state.selectedFile) {
+      payload.source_file = state.selectedFile.name;
+    }
     renderScienceAnalysis(payload);
     showToast(payload.message || "Data berhasil diproses.", "success");
     addLog("success", payload.message || "Data berhasil disimpan ke Cosmos DB.");

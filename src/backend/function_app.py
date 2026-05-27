@@ -256,6 +256,7 @@ def upload_data(req: func.HttpRequest) -> func.HttpResponse:
                 "count": saved_count,
                 "cleaned": clean_requested,
                 "cleaning": cleaning,
+                "source_file": source_file,
                 "profile": analysis["profile"],
                 "quality": analysis["quality"],
                 "charts": analysis["charts"],
