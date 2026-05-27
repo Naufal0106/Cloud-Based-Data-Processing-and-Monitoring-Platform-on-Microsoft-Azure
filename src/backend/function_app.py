@@ -1216,14 +1216,48 @@ def clean_records(
         "boolean_conversions": 0,
         "empty_rows_removed": 0,
         "duplicates_removed": 0,
+        "missing_values_removed": 0,
+        "outliers_removed": 0,
     }
+
+    # Hitung batas outlier (IQR) untuk kolom numerik
+    def get_percentile(sorted_list, p):
+        if not sorted_list:
+            return 0
+        k = (len(sorted_list) - 1) * p
+        f = math.floor(k)
+        c = math.ceil(k)
+        if f == c:
+            return sorted_list[int(k)]
+        return sorted_list[int(f)] * (c - k) + sorted_list[int(c)] * (k - f)
+
+    bounds = {}
+    for col_name in numeric_columns:
+        vals = []
+        for record in records:
+            val = record.get(col_name)
+            if val is not None and val != "":
+                try:
+                    vals.append(float(val))
+                except (ValueError, TypeError):
+                    pass
+        if len(vals) >= 4:
+            vals.sort()
+            q1 = get_percentile(vals, 0.25)
+            q3 = get_percentile(vals, 0.75)
+            iqr = q3 - q1
+            bounds[col_name] = (q1 - 1.5 * iqr, q3 + 1.5 * iqr)
+
     cleaned_records = []
     seen = set()
 
     for record in records:
         cleaned = {}
+        has_missing = False
+        has_outlier = False
+
         for key, value in record.items():
-            cleaned[key] = clean_value(
+            cleaned_val = clean_value(
                 key,
                 value,
                 numeric_columns,
@@ -1231,9 +1265,32 @@ def clean_records(
                 profile_map,
                 cleaning,
             )
+            cleaned[key] = cleaned_val
+
+            # Deteksi missing value (bila null/None)
+            if cleaned_val is None or cleaned_val == "":
+                has_missing = True
+
+            # Deteksi outlier berdasarkan batas IQR
+            if key in bounds and cleaned_val is not None:
+                try:
+                    num_val = float(cleaned_val)
+                    low, high = bounds[key]
+                    if num_val < low or num_val > high:
+                        has_outlier = True
+                except (ValueError, TypeError):
+                    pass
 
         if not has_record_value(cleaned):
             cleaning["empty_rows_removed"] += 1
+            continue
+
+        if has_missing:
+            cleaning["missing_values_removed"] += 1
+            continue
+
+        if has_outlier:
+            cleaning["outliers_removed"] += 1
             continue
 
         canonical = canonical_record(cleaned)
