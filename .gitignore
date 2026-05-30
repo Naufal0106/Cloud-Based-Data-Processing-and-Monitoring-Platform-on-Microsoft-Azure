@@ -110,6 +110,9 @@ local-backups/
 # ===============================
 AGENTS.md
 .vscode/
+# ===============================
+AGENTS.md
+.vscode/
 .idea/
 *.code-workspace
 
@@ -119,3 +122,9 @@ AGENTS.md
 Thumbs.db
 desktop.ini
 .DS_Store
+
+# ===============================
+# Lecturer Resources / Temp
+# ===============================
+ARAHAN DOSEN/
+__MACOSX/
