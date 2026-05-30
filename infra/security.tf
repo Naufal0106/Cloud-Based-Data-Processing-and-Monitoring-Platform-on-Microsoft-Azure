@@ -39,15 +39,15 @@ resource "azurerm_network_security_group" "nsg_publik" {
 
   # Izinkan SSH - Masukkan IP Publik kamu/Arifin di sini agar lebih aman
   security_rule {
-    name                       = "Allow-SSH-AdminOnly"
-    priority                   = 120
-    direction                  = "Inbound"
-    access                     = "Allow"
-    protocol                   = "Tcp"
-    source_port_range          = "*"
-    destination_port_range     = "22"
-    source_address_prefix      = "*" # Ganti ke IP asli kalian jika ingin sangat ketat
-    destination_address_prefix = "*"
+     name                       = "Allow-SSH-AdminOnly"
+     priority                   = 120
+     direction                  = "Inbound"
+     access                     = "Allow"
+     protocol                   = "Tcp"
+     source_port_range          = "*"
+     destination_port_range     = "22"
+     source_address_prefix      = var.admin_ssh_allowed_ip
+     destination_address_prefix = "*"
   }
 
   # BLOKIR semua traffic masuk lainnya (Default Deny)
