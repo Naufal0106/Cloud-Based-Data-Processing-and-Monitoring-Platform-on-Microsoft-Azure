@@ -181,10 +181,12 @@ Azure Application Insights digunakan untuk mencatat dan melacak performa sistem.
 Audit keamanan awal mendeteksi port SSH 22 VM terbuka untuk internet publik. Tim segera mengimplementasikan perbaikan pada [security.tf](file:///e:/semester%206/Cloud-Based-Data-Processing-and-Monitoring-Platform-on-Microsoft-Azure/infra/security.tf) dengan membatasi akses SSH inbound hanya untuk IP publik spesifik administrator via parameter `var.admin_ssh_allowed_ip`.
 
 ### **6.3 Cost Analysis & Optimasi Biaya**
-Untuk mengontrol pengeluaran cloud agar tetap di dalam skema gratis/murah untuk tugas kuliah, kami menerapkan:
-1. **Azure Functions Consumption Plan:** Biaya hanya dihitung per eksekusi (menghilangkan biaya server idle).
-2. **Cosmos DB Serverless Mode:** Biaya per 1 juta Request Unit (RU), sangat murah dibandingkan model *provisioned throughput*.
-3. **Penjadwalan Matikan VM:** Virtual Machine admin dimatikan secara otomatis saat tidak digunakan untuk uji coba atau demo.
+Analisis biaya proyek mencakup pengeluaran modal tetap (*CapEx*) dan pengeluaran operasional bulanan (*OpEx*):
+1. **Pengeluaran Tetap (CapEx - Fixed Cost):** Pembelian custom domain `kelompok11cc.my.id` melalui registrar lokal **Domainesia** dengan biaya sewa tahunan sebesar Rp 15.000,- (sangat efisien untuk memberikan identitas dan akses aman HTTPS profesional pada platform).
+2. **Pengeluaran Operasional (OpEx):**
+   * **Azure Functions Consumption Plan:** Biaya hanya dihitung berdasarkan pemanggilan/eksekusi API nyata (menghilangkan biaya server idle).
+   * **Cosmos DB Serverless Mode:** Tarif fleksibel per 1 juta Request Unit (RU), menghindari biaya kapasitas *provisioned* yang tidak terpakai.
+   * **Penjadwalan VM:** Virtual Machine admin dimatikan secara otomatis di luar jam demo untuk menghemat kuota kredit cloud.
 
 ---
 

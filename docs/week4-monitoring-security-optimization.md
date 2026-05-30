@@ -127,6 +127,7 @@ Estimasi awal menggunakan pendekatan hemat biaya:
 | Storage Account | Standard LRS |
 | Cloudflare Pages | Static hosting untuk mengurangi beban Azure frontend |
 | Application Insights | Sampling 100% untuk demo; dapat diturunkan jika traffic tinggi |
+| Custom Domain (Domainesia) | Domain `.my.id` dengan sewa tetap Rp 15.000/tahun |
 
 Rekomendasi optimasi yang diterapkan/direncanakan:
 
