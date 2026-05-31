@@ -63,6 +63,8 @@ Azure Traffic Manager (failover backend)
           +--> /api/fallback-status
 ```
 
+![Arsitektur Final](docs/evidence/arsitektur-final.png)
+
 ## Alur Data
 
 1. User membuka dashboard dari Cloudflare Pages.
