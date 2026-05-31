@@ -437,15 +437,3 @@ Total: sekitar USD 37.60 per bulan
 ```
 
 Biaya aktual dapat berubah sesuai pemakaian, region, traffic, jumlah request Azure Functions, konsumsi Cosmos DB, log Application Insights, dan resource yang aktif.
-
-## Catatan PDF/ODT
-
-Dokumentasi utama proyek ini dikelola dalam format Markdown. Laporan Teknis Akhir versi PDF yang siap dikumpulkan telah dikompilasi secara otomatis dan tersedia di:
-* [Laporan_Teknis_Akhir_Kelompok_11.pdf](file:///e:/semester%206/Cloud-Based-Data-Processing-and-Monitoring-Platform-on-Microsoft-Azure/docs/Laporan_Teknis_Akhir_Kelompok_11.pdf)
-
-Jika terdapat perubahan pada konten markdown (`docs/Laporan_Teknis_Akhir_Kelompok_11.md`), Anda dapat meregenerasi PDF laporan secara otomatis dengan menjalankan perintah berikut:
-```bash
-python scripts/generate-final-report-pdf.py
-```
-Script ini akan memparsing dokumen markdown dan membangun berkas PDF ReportLab secara dinamis dengan menyematkan diagram arsitektur serta screenshot bukti implementasi secara rapi dan otomatis.
-
