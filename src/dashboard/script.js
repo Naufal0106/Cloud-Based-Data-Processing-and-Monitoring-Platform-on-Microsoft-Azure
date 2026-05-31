@@ -2092,7 +2092,7 @@ function exportReport() {
 
   const sections = [];
 
-  // --- Section 1: Summary ---
+  // Section 1: Summary
   sections.push(["# RINGKASAN KUALITAS DATA"]);
   sections.push(["Sumber File", escapeForCsv(analysis.source_file || "-")]);
   sections.push(["Total Record", toNumber(profile.record_count)]);
@@ -2106,7 +2106,7 @@ function exportReport() {
   sections.push(["Dianalisis Pada", new Date().toLocaleString("id-ID")]);
   sections.push([]);
 
-  // --- Section 2: Quality Issues ---
+  // Section 2: Quality Issues
   sections.push(["# QUALITY ISSUES"]);
   const issues = quality.issues || [];
   const recs = analysis.recommendations || [];
@@ -2123,7 +2123,7 @@ function exportReport() {
   }
   sections.push([]);
 
-  // --- Section 3: Column Profile ---
+  // Section 3: Column Profile
   const columns = profile.columns || [];
   if (columns.length) {
     sections.push(["# PROFIL KOLOM"]);
@@ -2150,7 +2150,7 @@ function exportReport() {
     sections.push([]);
   }
 
-  // --- Section 4: Correlation Matrix ---
+  // Section 4: Correlation Matrix
   const corrLabels = correlation.labels || [];
   const corrMatrix = correlation.matrix || [];
   if (corrLabels.length && corrMatrix.length) {
