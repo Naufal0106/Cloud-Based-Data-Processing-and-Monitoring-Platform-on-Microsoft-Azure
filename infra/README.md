@@ -15,13 +15,14 @@ Folder ini berisi bukti program Infrastructure as Code untuk resource Azure proy
 | --- | --- |
 | `backend.tf` | Remote backend Terraform di Azure Storage |
 | `locals.tf` | Tag standar proyek |
-| `main.tf` | Resource group, VNet, subnet, VM, public IP, NIC, Application Insights |
+| `main.tf` | Resource group, VNet, subnet, VM eksplorasi Minggu 2, public IP, NIC, Application Insights |
 | `security.tf` | NSG publik/privat, Key Vault, access policy, secret reference |
 | `iam.tf` | Role assignment tim berdasarkan prinsip least privilege |
 | `database.tf` | Cosmos DB account, database, container telemetry, container user |
 | `functions.tf` | Storage Function App, service plan serverless, Function App, raw-data container |
-| `storage.tf` | Storage static website sebagai backup hosting dashboard |
-| `network.tf` | Traffic Manager dan endpoint failover |
+| `appservice.tf` | App Service backup minimal sebagai secondary backend |
+| `storage.tf` | Storage static website sebagai backup/demo, bukan frontend utama |
+| `network.tf` | Traffic Manager dan endpoint failover ke Azure Functions/App Service backup |
 | `monitoring.tf` | Action group, metric alert, diagnostic settings terpusat, dan storage lifecycle policy |
 | `evidence.tf` | Ringkasan perubahan Azure per minggu dalam format Terraform |
 

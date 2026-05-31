@@ -15,6 +15,7 @@ Membangun platform cloud untuk pemrosesan data otomatis, penyimpanan data JSON/C
 Arsitektur akhir menggunakan dua platform:
 
 - Cloudflare Pages untuk frontend dashboard.
+- Cloudflare Pages Function untuk proxy `/api/*`.
 - Microsoft Azure untuk backend, database, storage, secret management, monitoring, dan infrastruktur pendukung.
 
 ## Layanan yang Digunakan
@@ -22,14 +23,16 @@ Arsitektur akhir menggunakan dua platform:
 | Platform | Layanan | Fungsi |
 | --- | --- | --- |
 | Cloudflare | Cloudflare Pages | Hosting dashboard statis |
+| Cloudflare | Cloudflare Pages Function | Proxy same-origin `/api/*` |
 | Azure | Azure Functions | Serverless API dan pemrosesan data |
+| Azure | Azure Traffic Manager | Backend failover routing |
+| Azure | Azure App Service | Secondary/backup backend minimal |
 | Azure | Azure Blob Storage | Penyimpanan file JSON, CSV, dan Excel mentah |
 | Azure | Azure Cosmos DB | Database NoSQL untuk hasil pemrosesan |
 | Azure | Azure Key Vault | Penyimpanan secret |
 | Azure | Application Insights | Observability backend |
 | Azure | Virtual Network dan NSG | Segmentasi dan kontrol jaringan |
-| Azure | Virtual Machine | Web atau management server opsional |
-| Azure | Traffic Manager | Endpoint routing atau backup |
+| Azure | Virtual Machine | Eksplorasi target Minggu 2, bukan runtime final |
 
 ## Pembagian Tugas
 
@@ -48,7 +51,8 @@ Arsitektur akhir menggunakan dua platform:
 - Dokumentasi arsitektur, jaringan, IAM, dan resource.
 - CI/CD backend melalui GitHub Actions.
 - Frontend statis yang siap dideploy ke Cloudflare Pages.
-- Bukti visual tersimpan di `docs/evidence/architecture-final-target.png`.
+- Bukti visual final tersimpan di `docs/evidence/arsitektur-final.png`.
+- Path kompatibilitas diagram lama tersedia di `docs/evidence/architecture-final-target.png`.
 
 ## Status
 

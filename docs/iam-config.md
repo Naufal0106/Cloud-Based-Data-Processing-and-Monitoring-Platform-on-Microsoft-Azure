@@ -32,13 +32,21 @@ Resource Group: RG-Kelompok11
 | --- | --- | --- |
 | Current Terraform principal | Get, List, Set, Delete, Purge, Recover | Administrasi secret saat provisioning |
 | Managed Identity Function App | Get, List | Membaca secret Cosmos DB connection string |
+| Managed Identity App Service backup | Get, List | Membaca secret jika fallback backend dikembangkan membaca service/data Azure |
+
+## Akses Runtime Monitoring
+
+| Principal | Role Azure | Scope | Tujuan |
+| --- | --- | --- | --- |
+| Managed Identity Function App | Monitoring Reader | Resource Group `RG-Kelompok11` | Membaca Azure Monitor metrics untuk dashboard developer/admin |
 
 ## Prinsip Keamanan
 
 - Tidak menggunakan akun bersama.
 - Akses diberikan sesuai tanggung jawab tim.
 - Secret database disimpan di Key Vault.
-- Function App menggunakan managed identity untuk membaca secret.
+- Function App menggunakan managed identity untuk membaca secret dan metrics Azure Monitor.
+- App Service backup memiliki managed identity dan akses baca Key Vault, tetapi saat ini hanya menjalankan endpoint fallback minimal.
 - File lokal yang berisi credential, seperti `.tfvars`, `.env`, dan `src/dashboard/env.js`, tidak boleh dicommit.
 
 ## Rekomendasi Perbaikan

@@ -24,8 +24,8 @@ Membangun fondasi infrastruktur cloud menggunakan Microsoft Azure dan Terraform.
 
 | Nama | CIDR | Fungsi |
 | --- | --- | --- |
-| Subnet-Publik | 10.0.1.0/24 | Resource publik dan VM web |
-| Subnet-Privat | 10.0.2.0/24 | Resource internal atau private endpoint |
+| Subnet-Publik | 10.0.1.0/24 | Resource publik dan VM eksplorasi Minggu 2 |
+| Subnet-Privat | 10.0.2.0/24 | Reserved untuk resource internal atau private endpoint jika dikembangkan |
 
 ### IAM
 
@@ -41,6 +41,8 @@ Role assignment dibuat berdasarkan peran anggota tim. Scope utama adalah Resourc
 - `azurerm_linux_virtual_machine`
 - `azurerm_network_security_group`
 - `azurerm_role_assignment`
+
+VM, Public IP, dan NIC dibuat untuk eksplorasi target Minggu 2. Setelah arsitektur final dipindahkan ke Cloudflare Pages dan Azure Functions, VM tidak dipakai sebagai workload runtime aplikasi.
 
 ## Status Progress
 
@@ -64,7 +66,7 @@ Role assignment dibuat berdasarkan peran anggota tim. Scope utama adalah Resourc
 
 ## Catatan
 
-Dokumen ini berfokus pada fondasi awal. Layanan aplikasi seperti Azure Functions, Cosmos DB, Key Vault, dan Cloudflare Pages dijelaskan lebih lanjut pada dokumen arsitektur dan resource inventory.
+Dokumen ini berfokus pada fondasi awal. Layanan aplikasi seperti Cloudflare Pages, Cloudflare Pages Function, Azure Functions, Traffic Manager, App Service backup, Cosmos DB, dan Key Vault dijelaskan lebih lanjut pada dokumen arsitektur dan resource inventory.
 
 ## Kesimpulan
 

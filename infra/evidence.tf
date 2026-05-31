@@ -31,7 +31,7 @@ locals {
         "Virtual Network VNet-Utama-Kelompok11",
         "Subnet-Publik dan Subnet-Privat",
         "Public IP dan Network Interface untuk VM",
-        "Linux VM VM-Web-Kelompok11",
+        "Linux VM VM-Web-Kelompok11 sebagai eksplorasi target Minggu 2",
         "Network Security Group publik dan privat",
         "Role assignment IAM untuk anggota tim"
       ]
@@ -56,7 +56,8 @@ locals {
         "Cosmos DB container telemetry-data dan users",
         "Azure Key Vault kv-monitoring-k11-naufal",
         "Static website storage stwebdashboardk11",
-        "Traffic Manager profile tm-monitoring-k11"
+        "Traffic Manager profile tm-monitoring-k11",
+        "Azure App Service backup app-backend-backup-k11"
       ]
     }
 
@@ -77,7 +78,7 @@ locals {
         "Diagnostic settings terpusat ke Log Analytics untuk Function App, Cosmos DB, dan Blob Storage",
         "Storage lifecycle policy raw-data-retention untuk retensi file mentah",
         "Key Vault secret reference untuk AUTH_TOKEN_SECRET",
-        "Traffic Manager endpoint failover untuk VM, Function App, dan backup storage"
+        "Traffic Manager endpoint failover untuk Azure Functions primary dan App Service backup"
       ]
     }
   }

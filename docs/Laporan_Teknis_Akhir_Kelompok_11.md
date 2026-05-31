@@ -19,93 +19,117 @@
 ## **BAB I: Pendahuluan**
 
 ### **1.1 Latar Belakang**
-Perkembangan teknologi *cloud computing* (komputasi awan) telah merevolusi cara organisasi mengelola data skala besar secara realtime. Kecepatan pengumpulan data dari berbagai modul sensor, sistem logging aplikasi, dan aktivitas pengguna menuntut infrastruktur yang tidak hanya cepat namun juga aman, scalable (dapat diskalakan), serta memiliki ketersediaan tinggi (*high availability*). 
+Perkembangan teknologi *cloud computing* telah mengubah cara organisasi mengelola data skala besar secara realtime. Kecepatan pengumpulan data dari sensor, log aplikasi, dan aktivitas pengguna menuntut infrastruktur yang cepat, aman, scalable, serta mudah dimonitor.
 
-Dalam proyek ini, Kelompok 11 merancang dan mengimplementasikan **Cloud-Based Data Processing & Monitoring Platform**. Sistem ini memproses unggahan file data berukuran besar (hingga 100 MB) dalam berbagai format (CSV, JSON, XLSX, XLS), menerapkan pembersihan data secara otomatis dari nilai kosong (*missing values*) serta anomali ekstrim (*outliers*), dan memvisualisasikan hasilnya secara realtime ke dashboard interaktif. 
+Dalam proyek ini, Kelompok 11 merancang dan mengimplementasikan **Cloud-Based Data Processing & Monitoring Platform**. Sistem ini memproses unggahan file data hingga 100 MB dalam format CSV, JSON, XLSX, dan XLS, menjalankan analisis kualitas data, melakukan cleaning otomatis jika diminta, dan memvisualisasikan hasilnya ke dashboard interaktif.
 
-Pendekatan *Hybrid Cloud* dipilih dengan menempatkan static frontend pada **Cloudflare Pages** demi efisiensi biaya dan performa distribusi global, sementara backend serverless serta database NoSQL dijalankan di atas **Microsoft Azure** untuk integrasi secret management, storage, dan monitoring yang handal.
+Pendekatan *Hybrid Cloud* dipilih dengan menempatkan static frontend pada **Cloudflare Pages** untuk efisiensi biaya dan distribusi global, sementara backend serverless, failover backend, database NoSQL, storage, secret management, dan observability dijalankan di atas **Microsoft Azure**.
 
 ### **1.2 Tujuan Proyek**
-1. Membangun platform pemrosesan data (ETL pipeline) berbasis cloud yang dapat menangani file hingga 100 MB secara aman dan realtime.
-2. Menerapkan prinsip *Infrastructure as Code* (IaC) menggunakan **Terraform** untuk mereproduksi seluruh infrastruktur cloud Azure secara instan dan konsisten.
-3. Menyediakan dashboard monitoring *observability* (CPU, Latency, API request rate, error rate) serta notifikasi peringatan otomatis (*alerting rules*).
-4. Melakukan pengamanan data menggunakan *least privilege access control*, isolasi data per akun, enkripsi *at-rest* dan *in-transit*, serta perlindungan secret dengan **Azure Key Vault**.
+1. Membangun platform pemrosesan data berbasis cloud yang dapat menangani file hingga 100 MB secara aman.
+2. Menerapkan prinsip *Infrastructure as Code* menggunakan **Terraform** untuk mendokumentasikan dan mereproduksi resource Azure.
+3. Menyediakan dashboard monitoring untuk CPU/memory, request rate, latency, error rate, storage transactions, dan metrik Cosmos DB.
+4. Mengamankan data menggunakan role-based access control, isolasi data per akun, Cloudflare proxy, Azure Key Vault, dan managed identity.
 
 ### **1.3 Ruang Lingkup Proyek**
-* **Frontend:** Dashboard responsif berbasis HTML, CSS Vanilla, dan Javascript dengan pustaka visualisasi Chart.js, dideploy di Cloudflare Pages.
-* **Backend:** Azure Functions berbasis Python 3.11 dengan skema serverless consumption plan.
-* **Database:** Azure Cosmos DB dengan model NoSQL (SQL API) untuk penyimpanan telemetri dan akun pengguna.
-* **Keamanan:** HTTPS terenkripsi penuh melalui proxy Cloudflare, Azure Key Vault untuk penyimpanan data rahasia, serta Network Security Group (NSG) dengan konfigurasi port SSH 22 terbatas.
+* **Frontend:** Dashboard responsif berbasis HTML, CSS, JavaScript, dan Chart.js, dideploy di Cloudflare Pages.
+* **Edge Proxy:** Cloudflare Pages Function `/api/*` sebagai proxy same-origin yang menyimpan Azure Function key di sisi server.
+* **Backend Primary:** Azure Functions Python 3.11 dengan skema serverless consumption plan.
+* **Backend Failover:** Azure Traffic Manager dengan Azure Functions sebagai priority 1 dan Azure App Service backup minimal sebagai priority 2.
+* **Database:** Azure Cosmos DB for NoSQL untuk penyimpanan telemetry dan akun pengguna.
+* **Keamanan dan Monitoring:** Azure Key Vault, Application Insights, Azure Monitor, diagnostic settings, action group, dan lifecycle policy.
 
 ---
 
 ## **BAB II: Landasan Teori**
 
 ### **2.1 Cloud Computing & Hybrid Architecture**
-Komputasi awan adalah penyediaan layanan komputasi (server, penyimpanan, database, jaringan, perangkat lunak) melalui internet. Proyek ini mengimplementasikan model *Hybrid Cloud* yang memadukan keunggulan **Cloudflare Pages** (distribusi CDN edge statis global) dengan **Microsoft Azure** (layanan komputasi backend, database NoSQL, dan monitoring operasional).
+Komputasi awan adalah penyediaan layanan komputasi melalui internet. Proyek ini mengimplementasikan model *Hybrid Cloud* yang memadukan Cloudflare Pages untuk frontend/edge delivery dan Microsoft Azure untuk backend, data layer, security, monitoring, dan failover.
 
 ### **2.2 Infrastructure as Code (IaC) & Terraform**
-IaC adalah metode mengelola dan menyediakan infrastruktur IT melalui file definisi mesin yang dapat dibaca, bukan konfigurasi fisik manual. **Terraform** digunakan karena portabilitasnya yang tinggi dan dukungannya yang luas terhadap provider Microsoft Azure (`azurerm`).
+IaC adalah metode mengelola infrastruktur melalui file deklaratif. Terraform digunakan karena mendukung provider Microsoft Azure (`azurerm`) dan memudahkan audit resource yang dibuat.
 
 ### **2.3 Serverless Compute (Azure Functions)**
-Azure Functions adalah layanan komputasi serverless berbasis *event-driven* yang memungkinkan pengembang menjalankan potongan kecil kode tanpa harus mengelola infrastruktur server virtual secara manual. Mode *Consumption Plan (Y1)* digunakan untuk meminimalkan biaya karena tagihan hanya dihitung berdasarkan lama eksekusi kode backend.
+Azure Functions adalah layanan komputasi serverless berbasis event-driven. Mode Consumption Plan (Y1) digunakan agar biaya mengikuti jumlah eksekusi API dan proses data.
 
 ### **2.4 NoSQL Database (Azure Cosmos DB)**
-Azure Cosmos DB adalah database terdistribusi secara global yang mendukung model data NoSQL. SQL API (Core) digunakan untuk menyimpan objek JSON sensor/log telemetri secara fleksibel tanpa memerlukan skema tabel SQL yang statis.
+Azure Cosmos DB mendukung model data NoSQL berbentuk JSON. SQL API digunakan untuk menyimpan telemetry hasil pemrosesan dan data user login/register.
 
 ### **2.5 Edge Proxy & Secret Management**
-Keamanan merupakan aspek vital. **Azure Key Vault** memisahkan secret (seperti koneksi database dan kunci JWT) dari kode program. **Cloudflare Page Functions** bertindak sebagai proxy `/api` yang menyisipkan autentikasi internal Azure secara aman tanpa mengeksposnya ke browser klien.
+Cloudflare Pages Function bertindak sebagai proxy `/api/*` agar browser tidak melihat Azure Function URL dan function key. Azure Key Vault memisahkan secret seperti connection string Cosmos DB dan `AUTH_TOKEN_SECRET` dari source code.
 
 ---
 
 ## **BAB III: Arsitektur & Desain Sistem**
 
-### **3.1 Diagram Topologi Jaringan & Arsitektur**
-Berikut adalah desain arsitektur jaringan end-to-end yang dibangun di Microsoft Azure dan Cloudflare:
+### **3.1 Diagram Topologi dan Arsitektur**
+Diagram visual final tersedia pada:
 
 ```text
-  [ Browser Klien ]
-         │
-         ▼  (HTTPS / TLS)
-  [ Cloudflare Pages / kelompok11cc.my.id ]
-         │
-         ▼  (Proxy /api dengan Azure Key)
-  [ Cloudflare Pages Function Proxy ]
-         │
-         ▼  (Jalur Aman HTTPS)
-  [ Azure Traffic Manager ]
-         │
-         ├───────►  [ Serverless Azure Functions (Primary) ]
-         │               │  (Managed Identity)
-         │               ├─────► Azure Key Vault
-         │               ├─────► Azure Cosmos DB (users & telemetry-data)
-         │               ├─────► Azure Storage Account (func_storage)
-         │               └─────► Application Insights (Monitoring)
-         │
-         └───────►  [ Azure App Service (Secondary/Backup) ]
+docs/evidence/arsitektur-final.png
 ```
 
-### **3.2 Pembagian Subnet & Keamanan Jaringan**
-1. **Virtual Network (VNet):** `10.0.0.0/16`
-2. **Subnet Publik:** `10.0.1.0/24` (Untuk VM Command Center/Admin portal).
-3. **Subnet Privat:** `10.0.2.0/24` (Untuk database Cosmos DB dan backend API).
-4. **Network Security Group (NSG):**
-   * **NSG Publik:** Membuka port 80 (HTTP) dan port 443 (HTTPS) untuk umum, serta port 22 (SSH) dibatasi hanya untuk IP publik administrator tepercaya (`var.admin_ssh_allowed_ip`).
-   * **NSG Privat:** Hanya menerima koneksi inbound dari Subnet Publik (`10.0.1.0/24`) dan menolak semua lalu lintas langsung dari internet (Default Deny).
+Path lama berikut dipertahankan sebagai kompatibilitas dan berisi diagram yang sama:
+
+```text
+docs/evidence/architecture-final-target.png
+```
+
+Topologi final:
+
+```text
+[External Users]
+       |
+       v
+[Cloudflare DNS + CDN]
+       |
+       v
+[Cloudflare Pages Dashboard]
+       |
+       v
+[Cloudflare Pages Function Proxy /api/*]
+       |
+       v
+[Azure Traffic Manager - backend failover]
+       |
+       +--> Priority 1: Azure Functions primary backend
+       |        +--> /api/upload, /api/analyze, /api/data, /api/analytics
+       |        +--> auth/login/register
+       |        +--> Blob trigger process_blob
+       |        +--> Azure Blob Storage raw-data
+       |        +--> Azure Cosmos DB db-platform-monitoring
+       |        |      +-- telemetry-data
+       |        |      +-- users
+       |        +--> Azure Key Vault
+       |        +--> Application Insights / Azure Monitor
+       |
+       +--> Priority 2: Azure App Service backup minimal
+                +--> /api/hello
+                +--> /api/fallback-status
+```
+
+### **3.2 Jaringan dan Resource Eksplorasi Minggu 2**
+1. **Virtual Network (VNet):** `10.0.0.0/16`.
+2. **Subnet Publik:** `10.0.1.0/24`, digunakan untuk resource eksplorasi Minggu 2 seperti VM.
+3. **Subnet Privat:** `10.0.2.0/24`, disiapkan sebagai cadangan untuk private endpoint/resource internal jika proyek dikembangkan.
+4. **NSG:** Menjadi baseline kontrol inbound untuk subnet publik dan privat.
+
+Catatan penting: VM, Public IP, dan NIC dipakai untuk eksplorasi target Minggu 2 saja. Runtime final aplikasi tidak bergantung pada VM. Azure Functions, Cosmos DB, Blob Storage, dan Key Vault pada implementasi final saat ini tidak diklaim berjalan di subnet privat.
 
 ---
 
 ## **BAB IV: Implementasi Sistem**
 
 ### **4.1 Konfigurasi Terraform (IaC)**
-Seluruh infrastruktur dideklarasikan dalam format Terraform. Konfigurasi dibagi menjadi berkas-berkas modular:
+Seluruh infrastruktur Azure dideklarasikan dalam Terraform:
 
-* [main.tf](file:///e:/semester%206/Cloud-Based-Data-Processing-and-Monitoring-Platform-on-Microsoft-Azure/infra/main.tf): Deklarasi provider Azure, Resource Group, dan Virtual Machine.
-* [network.tf](file:///e:/semester%206/Cloud-Based-Data-Processing-and-Monitoring-Platform-on-Microsoft-Azure/infra/network.tf): Mengatur VNet, Subnet, dan profil Azure Traffic Manager.
-* [security.tf](file:///e:/semester%206/Cloud-Based-Data-Processing-and-Monitoring-Platform-on-Microsoft-Azure/infra/security.tf): Mengatur NSG, IP rules, dan instans Azure Key Vault.
-* [database.tf](file:///e:/semester%206/Cloud-Based-Data-Processing-and-Monitoring-Platform-on-Microsoft-Azure/infra/database.tf): Mengatur Cosmos DB account, database `db-platform-monitoring`, serta container `users` dan `telemetry-data`.
-* [functions.tf](file:///e:/semester%206/Cloud-Based-Data-Processing-and-Monitoring-Platform-on-Microsoft-Azure/infra/functions.tf): Mengatur Azure Linux Function App dengan environment variables.
-* [monitoring.tf](file:///e:/semester%206/Cloud-Based-Data-Processing-and-Monitoring-Platform-on-Microsoft-Azure/infra/monitoring.tf): Konfigurasi Application Insights dan Alert Rules otomatis.
+* [main.tf](file:///e:/semester%206/Cloud-Based-Data-Processing-and-Monitoring-Platform-on-Microsoft-Azure/infra/main.tf): Provider Azure, Resource Group, VNet, subnet, VM eksplorasi M2, dan Application Insights.
+* [network.tf](file:///e:/semester%206/Cloud-Based-Data-Processing-and-Monitoring-Platform-on-Microsoft-Azure/infra/network.tf): Azure Traffic Manager dan endpoint failover backend.
+* [security.tf](file:///e:/semester%206/Cloud-Based-Data-Processing-and-Monitoring-Platform-on-Microsoft-Azure/infra/security.tf): NSG, Azure Key Vault, access policy, dan secret.
+* [database.tf](file:///e:/semester%206/Cloud-Based-Data-Processing-and-Monitoring-Platform-on-Microsoft-Azure/infra/database.tf): Cosmos DB account, database `db-platform-monitoring`, container `users`, dan container `telemetry-data`.
+* [functions.tf](file:///e:/semester%206/Cloud-Based-Data-Processing-and-Monitoring-Platform-on-Microsoft-Azure/infra/functions.tf): Azure Linux Function App, Consumption Plan, app settings, dan container `raw-data`.
+* [appservice.tf](file:///e:/semester%206/Cloud-Based-Data-Processing-and-Monitoring-Platform-on-Microsoft-Azure/infra/appservice.tf): Azure App Service backup minimal sebagai secondary backend.
+* [monitoring.tf](file:///e:/semester%206/Cloud-Based-Data-Processing-and-Monitoring-Platform-on-Microsoft-Azure/infra/monitoring.tf): Action group, alert rules, diagnostic settings, dan storage lifecycle policy.
 
 ### **4.2 Skema Cosmos DB & Desain Dokumen JSON**
 1. **Container `users`** (Partition Key: `/email`):
@@ -121,6 +145,7 @@ Seluruh infrastruktur dideklarasikan dalam format Terraform. Konfigurasi dibagi 
      "last_login_at": "ISO-Timestamp"
    }
    ```
+
 2. **Container `telemetry-data`** (Partition Key: `/deviceId`):
    ```json
    {
@@ -142,66 +167,104 @@ Seluruh infrastruktur dideklarasikan dalam format Terraform. Konfigurasi dibagi 
    ```
 
 ### **4.3 Implementasi Backend API**
-Backend dibangun menggunakan pustaka bawaan python tanpa framework eksternal besar untuk mempercepat *cold start*. Pemrosesan JSON dan kompilasi parsing CSV/Excel diimplementasikan pada `src/backend/function_app.py`. Autentikasi didukung token JWT custom dengan masa berlaku (TTL) selama 8 jam.
+Backend dibangun pada `src/backend/function_app.py` menggunakan Azure Functions Python programming model. Endpoint utama meliputi:
+
+| Method | Endpoint | Fungsi |
+| --- | --- | --- |
+| GET | `/api/hello` | Health check |
+| POST | `/api/register` | Registrasi user role `user` |
+| POST | `/api/login` | Login dan penerbitan token sesi |
+| GET | `/api/me` | Profil user aktif |
+| GET | `/api/stats` | Statistik data |
+| GET | `/api/data` | Data terbaru |
+| POST | `/api/analyze` | Analisis file tanpa menyimpan |
+| GET | `/api/analytics` | Profiling, quality report, dan chart |
+| POST | `/api/upload` | Upload file JSON, CSV, XLSX, atau XLS |
+| GET | `/api/management/summary` | Ringkasan admin |
+| GET | `/api/management/users` | Admin-only daftar user |
+| PATCH/POST | `/api/management/users/{user_id}/role` | Admin-only update role |
+| GET | `/api/dev/ops-summary` | Dev/admin-only monitoring Azure dan Cloudflare |
+| GET | `/api/management/ops-summary` | Alias monitoring dev/admin |
 
 ---
 
 ## **BAB V: Pengujian Fungsional & Pemrosesan Data Science**
 
 ### **5.1 Skenario Pengujian API & Hasil**
-Pengujian otomatis dilakukan untuk 5 skenario utama:
-1. **Health Check (`GET /api/hello`):** Memastikan response `200 OK` dan status "online".
+Pengujian dilakukan untuk skenario utama:
+
+1. **Health Check (`GET /api/hello`):** Memastikan response sukses.
 2. **User Registration (`POST /api/register`):** Membuat akun baru dengan role default `user`.
-3. **User Authentication (`POST /api/login`):** Validasi password dan menerbitkan JWT token.
-4. **Data Upload (`POST /api/upload`):** Mengunggah dataset dan menyimpannya di bawah lisensi isolasi user.
-5. **Role-Based Access Control:** Memastikan user biasa tidak bisa membuka `/api/management/users` (hanya role `admin`).
+3. **User Authentication (`POST /api/login`):** Validasi password dan menerbitkan token sesi.
+4. **Data Analysis (`POST /api/analyze`):** Menganalisis kualitas file tanpa menyimpan data.
+5. **Data Upload (`POST /api/upload`):** Mengunggah dataset dan menyimpannya dengan metadata pemilik akun.
+6. **Analytics (`GET /api/analytics`):** Menghasilkan profiling, quality report, dan chart dari data tersimpan.
+7. **Role-Based Access Control:** Memastikan user biasa tidak bisa membuka `/api/management/users`.
+8. **Fallback Backend:** Memastikan App Service backup menjawab `/api/hello` dan `/api/fallback-status`.
 
 ### **5.2 Pembersihan Data Science secara Otomatis**
-Ketika pengguna menekan tombol **"Bersihkan"** di UI, backend akan menjalankan algoritma pembersihan data secara berurutan:
-1. **Pembersihan String:** Spasi di awal dan akhir dihapus (*trimmed*).
-2. **Pembersihan Nilai Kosong (*Missing Value*):** Baris data yang memiliki nilai kosong pada kolom mana pun akan otomatis dilewati/dihapus agar tidak merusak akurasi pemodelan.
-3. **Pembersihan Nilai Pencilan (*Outliers*):** 
-   * Menggunakan metode matematis **Interquartile Range (IQR)**:
-     $$IQR = Q_3 - Q_1$$
-     $$\text{Batas Bawah} = Q_1 - 1.5 \times IQR$$
-     $$\text{Batas Atas} = Q_3 + 1.5 \times IQR$$
-   * Semua baris data dengan nilai numerik di luar batas bawah dan batas atas akan disaring dan dibuang dari database.
-4. **Visualisasi Histogram Bersih:** Hasil visualisasi grafik histogram dan koefisien korelasi Pearson di dashboard akan secara langsung menggambarkan data bersih tersebut.
+Ketika pengguna memilih proses cleaning, backend menjalankan:
+
+1. **Pembersihan String:** Spasi di awal dan akhir dihapus.
+2. **Pembersihan Nilai Kosong:** Cell kosong dikonversi menjadi `null`; record dengan missing value dapat disaring saat cleaning.
+3. **Pembersihan Duplikat:** Record duplikat dihapus berdasarkan representasi canonical.
+4. **Deteksi Outlier Numerik:** Kolom numerik menggunakan batas Interquartile Range (IQR) untuk menyaring nilai pencilan.
+5. **Visualisasi:** Dashboard menampilkan distribusi status, kategori, missing value per kolom, histogram numerik, top values, dan korelasi numerik.
 
 ---
 
 ## **BAB VI: Monitoring, Keamanan, & Cost Management**
 
-### **6.1 Konfigurasi Observability (Application Insights)**
-Azure Application Insights digunakan untuk mencatat dan melacak performa sistem. Log dikelompokkan secara terpusat di Log Analytics Workspace.
-* Peringatan Latensi tinggi (> 2 detik) akan memicu Azure Monitor Alert.
-* Kegagalan HTTP 5xx pada serverless backend akan mengirim notifikasi email otomatis ke tim operasional (`alert_email`).
+### **6.1 Konfigurasi Observability**
+Application Insights dan Azure Monitor digunakan untuk mencatat request, latency, error, storage transactions, Cosmos DB metrics, serta metrik resource lain. Diagnostic settings mengirim log Function App, Cosmos DB, dan Blob Storage ke Log Analytics Workspace.
 
-### **6.2 Security Audit & Hardening SSH Port 22**
-Audit keamanan awal mendeteksi port SSH 22 VM terbuka untuk internet publik. Tim segera mengimplementasikan perbaikan pada [security.tf](file:///e:/semester%206/Cloud-Based-Data-Processing-and-Monitoring-Platform-on-Microsoft-Azure/infra/security.tf) dengan membatasi akses SSH inbound hanya untuk IP publik spesifik administrator via parameter `var.admin_ssh_allowed_ip`.
+Alert utama:
+
+| Alert | Target | Tujuan |
+| --- | --- | --- |
+| Function 5xx Error | Azure Functions | Deteksi error backend |
+| Function Latency | Azure Functions | Deteksi penurunan performa |
+| VM CPU High | VM eksplorasi M2 | Bukti alert resource eksplorasi jika VM aktif |
+
+### **6.2 Security Audit**
+Baseline keamanan yang diterapkan:
+
+* Browser hanya memanggil `/api/*`; function key berada di Cloudflare environment variable.
+* Cosmos connection string dan auth token secret berada di Key Vault.
+* Password disimpan dengan hash PBKDF2.
+* Token login ditandatangani dengan `AUTH_TOKEN_SECRET`.
+* Register publik hanya membuat role `user`; role `dev` dan `admin` dikelola lewat kontrol internal.
+* User biasa hanya membaca data miliknya sendiri.
+* Managed identity Function App digunakan untuk Key Vault dan Azure Monitor metrics.
+* VM hanya resource eksplorasi M2. Jika masih dinyalakan, SSH harus dibatasi ke IP admin dan sebaiknya memakai SSH key.
 
 ### **6.3 Cost Analysis & Optimasi Biaya**
-Analisis biaya proyek mencakup pengeluaran modal tetap (*CapEx*) dan pengeluaran operasional bulanan (*OpEx*):
-1. **Pengeluaran Tetap (CapEx - Fixed Cost):** Pembelian custom domain `kelompok11cc.my.id` melalui registrar lokal **Domainesia** dengan biaya sewa tahunan sebesar Rp 15.000,- (sangat efisien untuk memberikan identitas dan akses aman HTTPS profesional pada platform).
-2. **Pengeluaran Operasional (OpEx):**
-   * **Azure Functions Consumption Plan:** Biaya hanya dihitung berdasarkan pemanggilan/eksekusi API nyata (menghilangkan biaya server idle).
-   * **Cosmos DB Serverless Mode:** Tarif fleksibel per 1 juta Request Unit (RU), menghindari biaya kapasitas *provisioned* yang tidak terpakai.
-   * **Penjadwalan VM:** Virtual Machine admin dimatikan secara otomatis di luar jam demo untuk menghemat kuota kredit cloud.
+1. **Domain:** Custom domain `kelompok11cc.my.id` menjadi biaya tetap tahunan.
+2. **Cloudflare Pages:** Mengurangi kebutuhan compute Azure untuk frontend.
+3. **Azure Functions Consumption Plan:** Biaya mengikuti eksekusi API.
+4. **Cosmos DB Serverless:** Cocok untuk traffic kecil/proyek.
+5. **Azure App Service Backup Minimal:** Memberikan endpoint fallback tanpa menjalankan VM sebagai backend aktif.
+6. **Storage Lifecycle Policy:** Mengontrol retensi file mentah pada Blob Storage.
+7. **VM Eksplorasi M2:** Dapat dimatikan saat tidak diperlukan karena bukan runtime final.
 
 ---
 
 ## **BAB VII: Penutup & Kesimpulan**
 
 ### **7.1 Kesimpulan**
-Layanan pengolahan data telemetri berbasis cloud ini berhasil dibangun menggunakan arsitektur hybrid Microsoft Azure dan Cloudflare. Penerapan pembersihan data science (*missing values* dan *outliers* via IQR) berjalan dengan akurat di backend serverless. Infrastruktur IaC Terraform terbukti dapat mereproduksi seluruh jaringan dan server secara konsisten dan aman.
+Platform berhasil dibangun menggunakan arsitektur hybrid Cloudflare dan Microsoft Azure. Jalur final menggunakan Cloudflare DNS/CDN, Cloudflare Pages, Cloudflare Pages Function proxy, Azure Functions, Azure Traffic Manager, Azure App Service backup minimal, Blob Storage, Cosmos DB, Key Vault, dan Application Insights/Azure Monitor.
 
 ### **7.2 Keterbatasan Proyek**
-* Pemrosesan data berukuran 100 MB memerlukan waktu beberapa detik pada mode cold start Azure Functions Serverless.
-* Visualisasi grafik korelasi dibatasi hanya untuk kolom numerik utama demi kenyamanan tampilan visual dashboard.
+* Pemrosesan data berukuran 100 MB dapat terdampak cold start Azure Functions.
+* Visualisasi grafik korelasi dibatasi pada kolom numerik utama.
+* App Service backup saat ini hanya menyediakan endpoint health/fallback minimal, bukan failover penuh untuk semua API data processing.
+* PDF/ODT laporan perlu diekspor ulang dari Markdown final jika dibutuhkan untuk pengumpulan.
 
 ### **7.3 Saran Pengembangan**
-* Implementasi integrasi Azure Event Hubs untuk menangani antrean data jika data yang masuk berupa data streaming kontinu (realtime IoT).
-* Penggunaan model machine learning tersemat untuk mendeteksi anomali telemetri secara prediktif.
+* Perluas App Service backup jika failover penuh dibutuhkan.
+* Tambahkan private endpoint dan VNet integration untuk production.
+* Gunakan queue/event streaming jika data masuk menjadi realtime dan kontinu.
+* Tambahkan model machine learning untuk deteksi anomali prediktif.
 
 ---
 
@@ -209,7 +272,8 @@ Layanan pengolahan data telemetri berbasis cloud ini berhasil dibangun menggunak
 1. Microsoft. (2025). *Azure Functions Documentation*. https://learn.microsoft.com/en-us/azure/azure-functions/
 2. HashiCorp. (2025). *Terraform Provider for Azure*. https://registry.terraform.io/providers/hashicorp/azurerm/latest
 3. Cloudflare. (2025). *Cloudflare Pages & Functions Documentation*. https://developers.cloudflare.com/pages/
-4. Han, J., Kamber, M., & Jian, P. (2012). *Data Mining: Concepts and Techniques Third Edition*. Morgan Kaufmann.
+4. Microsoft. (2025). *Azure Traffic Manager Documentation*. https://learn.microsoft.com/en-us/azure/traffic-manager/
+5. Han, J., Kamber, M., & Jian, P. (2012). *Data Mining: Concepts and Techniques Third Edition*. Morgan Kaufmann.
 
 ---
 
@@ -217,11 +281,16 @@ Layanan pengolahan data telemetri berbasis cloud ini berhasil dibangun menggunak
 
 ### **Lampiran 1: Form Refleksi Kelompok 11**
 * **Naufal Ihsan Sriyanto (DevOps Engineer / Owner):** Mengelola konfigurasi deployment Terraform, GitHub Actions CI/CD, konfigurasi domain Cloudflare, dan integrasi Key Vault.
-* **Arifin (Backend Dev):** Mengembangkan REST API di Azure Functions, logika autentikasi JWT, database Cosmos DB, dan algoritma pembersihan IQR.
-* **Anggota 3 & 4:** Membantu penyusunan UI dashboard statis dan penyusunan dokumen laporan mingguan.
+* **Zhykwa Ceryl Mavanudin (Cloud Architect):** Menyusun arsitektur cloud, network baseline, dan desain failover.
+* **Muhammad Arifin Ilham (Backend Developer):** Mengembangkan REST API Azure Functions, autentikasi, integrasi Cosmos DB, upload, analytics, dan processing data.
+* **Rendy Saputra (Security Engineer):** Menyusun IAM, Key Vault, NSG, dan security review.
 
 ### **Lampiran 2: Daftar Berkas Pendukung (Evidence)**
+* Diagram Arsitektur Final: [arsitektur-final.png](file:///e:/semester%206/Cloud-Based-Data-Processing-and-Monitoring-Platform-on-Microsoft-Azure/docs/evidence/arsitektur-final.png)
 * Portal Dashboard Screenshot: [ui-user-preview.png](file:///e:/semester%206/Cloud-Based-Data-Processing-and-Monitoring-Platform-on-Microsoft-Azure/docs/evidence/ui-user-preview.png)
 * Portal Admin Screenshot: [ui-admin-preview.png](file:///e:/semester%206/Cloud-Based-Data-Processing-and-Monitoring-Platform-on-Microsoft-Azure/docs/evidence/ui-admin-preview.png)
 * Bukti Metrik App Insights: [week4-application-insights-metrics.png](file:///e:/semester%206/Cloud-Based-Data-Processing-and-Monitoring-Platform-on-Microsoft-Azure/docs/evidence/week4-application-insights-metrics.png)
 * Bukti Notifikasi Alert: [week4-alert-rules-action-group.png](file:///e:/semester%206/Cloud-Based-Data-Processing-and-Monitoring-Platform-on-Microsoft-Azure/docs/evidence/week4-alert-rules-action-group.png)
+
+### **Lampiran 3: Catatan Ekspor PDF/ODT**
+Sumber kebenaran laporan berada pada file Markdown ini. File `docs/Laporan_Teknis_Akhir_Kelompok_11.pdf` dan `docs/Laporan_Teknis_Akhir_Kelompok_11.odt` perlu diekspor ulang dari Markdown final jika dibutuhkan untuk pengumpulan.

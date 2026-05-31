@@ -18,7 +18,8 @@ docs/laporan-mingguan/
 
 | Minggu | Bukti | File |
 | --- | --- | --- |
-| Minggu 1 | Diagram arsitektur target | `architecture-final-target.png` |
+| Minggu 1 | Diagram arsitektur final | `arsitektur-final.png` |
+| Minggu 1 | Alias kompatibilitas diagram final | `architecture-final-target.png` |
 | Minggu 3 | Halaman login kosong untuk akun baru | `ui-login.png` |
 | Minggu 3 | Halaman register | `ui-register.png` |
 | Minggu 3 | Preview dashboard role user | `ui-user-preview.png` |
@@ -35,9 +36,12 @@ Beberapa bukti harus diambil dari Azure Portal atau Cloudflare dashboard karena 
 | Minggu | Screenshot Yang Disarankan | Lokasi Portal | Catatan Sensor |
 | --- | --- | --- | --- |
 | Minggu 2 | Resource Group `RG-Kelompok11` berisi resource project | Azure Portal > Resource groups | Jangan tampilkan subscription ID penuh jika tidak perlu |
-| Minggu 2 | VNet, public subnet, private subnet | Azure Portal > Virtual networks | Aman ditampilkan |
+| Minggu 2 | VNet, public subnet, private subnet | Azure Portal > Virtual networks | Fondasi eksplorasi M2, bukan klaim runtime final |
 | Minggu 2 | NSG rules publik/privat | Azure Portal > Network security groups | Mask IP admin jika ada |
+| Minggu 2 | VM eksplorasi M2 jika masih ada | Azure Portal > Virtual machines | VM bukan jalur runtime final |
 | Minggu 2 | IAM role assignment tim | Azure Portal > Access control (IAM) | Tampilkan role, sembunyikan email bila perlu |
+| Minggu 3 | Traffic Manager backend failover | Azure Portal > Traffic Manager profiles | Tampilkan endpoint primary Functions dan secondary App Service |
+| Minggu 3 | App Service backup minimal | Azure Portal > App Services | Jangan tampilkan secret/app setting |
 | Minggu 3 | Cosmos DB database dan container `telemetry-data`, `users` | Azure Portal > Cosmos DB | Jangan tampilkan connection string/key |
 | Minggu 3 | Blob container `raw-data` | Azure Portal > Storage Account > Containers | Jangan buka access key |
 | Minggu 3 | Azure Function App endpoint/status | Azure Portal > Function App | Jangan tampilkan function key |

@@ -23,7 +23,9 @@ Metrik yang dipantau:
 | Request count | Azure Functions / Application Insights | Melihat traffic API |
 | Response time / latency | Azure Functions / Application Insights | Menilai performa endpoint |
 | HTTP 5xx | Azure Functions / Application Insights | Deteksi error backend |
-| CPU VM | Azure Monitor VM metric | Deteksi beban compute VM |
+| CPU VM eksplorasi M2 | Azure Monitor VM metric | Bukti monitoring resource VM jika resource eksplorasi masih aktif |
+| Storage transactions | Azure Storage metric | Memantau aktivitas Blob Storage `raw-data` |
+| Cosmos DB requests/availability | Azure Monitor metric | Memantau beban dan availability database |
 | Storage capacity | Azure Storage metric | Deteksi pertumbuhan file mentah |
 
 ## Alert Rule
@@ -34,7 +36,7 @@ Terraform lokal menyiapkan alert rule pada `infra/monitoring.tf`.
 | --- | --- | --- | --- |
 | Function 5xx Error | Azure Function App | HTTP 5xx lebih dari 5 dalam 5 menit | Menangkap error API |
 | Function Latency | Azure Function App | Average response time lebih dari 2 detik | Menangkap penurunan performa |
-| VM CPU High | VM Web | CPU rata-rata lebih dari 80% selama 5 menit | Menangkap overload compute |
+| VM CPU High | VM eksplorasi M2 | CPU rata-rata lebih dari 80% selama 5 menit | Bukti alert untuk resource eksplorasi, bukan workload runtime final |
 
 Action group:
 
@@ -85,7 +87,7 @@ Baseline keamanan yang sudah diterapkan:
 | Role access | Register publik hanya role `user`; admin endpoint butuh role `admin` | Selesai |
 | Data isolation | User biasa hanya membaca data upload miliknya sendiri | Selesai |
 | Network | NSG publik dan privat tersedia di Terraform | Selesai |
-| VM access | SSH sebaiknya dibatasi ke IP admin | Perlu hardening akhir |
+| VM access | VM hanya resource eksplorasi M2; jika masih aktif, SSH sebaiknya dibatasi ke IP admin | Perlu hardening jika VM dinyalakan |
 | Repo hygiene | `.env`, `.tfvars`, state, key, dan local config diabaikan `.gitignore` | Selesai |
 
 Temuan dan mitigasi:
@@ -94,7 +96,7 @@ Temuan dan mitigasi:
 | --- | --- | --- |
 | Function key pernah berisiko terekspos jika dipanggil langsung dari frontend | Penyalahgunaan API backend | Proxy `/api` Cloudflare dan secret server-side |
 | Data lama bisa terlihat lintas user jika query global | Privasi data dashboard | Query telemetry dibatasi `owner_user_id` untuk role `user` |
-| SSH VM masih memakai source `*` pada Terraform | Akses brute force ke VM | Batasi `source_address_prefix` ke IP admin sebelum production |
+| SSH VM eksplorasi dapat berisiko jika dibuka luas | Akses brute force ke VM non-runtime | Batasi `source_address_prefix` ke IP admin jika VM masih digunakan |
 | File lokal agent dan arsip zip dapat masuk repo | Kebocoran catatan/internal artifact | `AGENTS.md` dan `*.zip` masuk `.gitignore` |
 
 ## Backup dan Recovery
@@ -134,10 +136,11 @@ Rekomendasi optimasi yang diterapkan/direncanakan:
 | Optimasi | Dampak |
 | --- | --- |
 | Cloudflare Pages untuk frontend | Mengurangi kebutuhan VM aktif sebagai frontend utama |
+| Azure App Service backup minimal | Memberi endpoint fallback tanpa menjalankan VM aktif |
 | Azure Functions Consumption Plan | Menghindari biaya compute idle backend |
 | Cosmos DB Serverless | Menghindari throughput provisioned yang tidak terpakai |
 | Storage lifecycle policy | Mengontrol pertumbuhan file mentah lama |
-| Matikan VM saat tidak dipakai demo | Mengurangi biaya compute non-esensial |
+| Matikan VM eksplorasi M2 saat tidak dipakai | Mengurangi biaya compute non-esensial karena VM bukan runtime final |
 
 ## Bukti Yang Perlu Diambil Dari Console
 
@@ -170,6 +173,10 @@ Daftar nama file screenshot yang disarankan tersedia di `docs/evidence/README.md
 | Security audit | Baseline ditulis dan bukti Defender/Security pricing sudah dilampirkan |
 | Backup dan recovery | Cosmos backup policy dan Blob container sudah dilampirkan |
 | Cost analysis | Cost usage CLI sudah dilampirkan; screenshot portal opsional jika butuh nominal |
+
+## Catatan Runtime Final
+
+Runtime aplikasi final tidak bergantung pada VM. Jalur aktif adalah Cloudflare Pages, Cloudflare Pages Function proxy, Azure Functions, Blob Storage, Cosmos DB, Key Vault, dan Application Insights/Azure Monitor. VM dipertahankan dalam dokumentasi Minggu 2 sebagai bukti eksplorasi target infrastruktur.
 
 ## Kesimpulan
 

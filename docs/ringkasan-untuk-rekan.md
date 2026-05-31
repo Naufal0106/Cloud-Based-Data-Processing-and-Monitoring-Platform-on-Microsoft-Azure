@@ -13,7 +13,9 @@ Proyek ini adalah platform untuk upload, pemrosesan, penyimpanan, dan monitoring
 Arsitektur akhirnya dibuat hybrid:
 
 - Frontend dashboard dideploy di Cloudflare Pages.
+- Cloudflare DNS/CDN mengarahkan domain dan Cloudflare Pages Function menjadi proxy `/api/*`.
 - Backend API dan data processing berjalan di Azure Functions.
+- Azure Traffic Manager menyiapkan failover backend dari Azure Functions ke Azure App Service backup minimal.
 - Data hasil proses disimpan di Azure Cosmos DB.
 - File mentah dapat diproses dari Azure Blob Storage.
 - Secret disimpan di Azure Key Vault dan environment Cloudflare, bukan di frontend.
@@ -55,8 +57,11 @@ Fitur yang sudah dibuat:
 - Endpoint validasi profil user aktif.
 - Endpoint statistik data.
 - Endpoint list data terbaru.
+- Endpoint analisis data tanpa menyimpan.
+- Endpoint analytics untuk profiling dan chart.
 - Endpoint upload data.
-- Endpoint admin-only untuk melihat user dan mengubah role.
+- Endpoint admin-only untuk ringkasan, melihat user, dan mengubah role.
+- Endpoint developer/admin untuk Azure Monitor dan Cloudflare workload.
 - Blob trigger untuk memproses file baru di container `raw-data`.
 - Parsing dan klasifikasi data.
 - Penyimpanan hasil proses ke Cosmos DB.
@@ -73,9 +78,15 @@ Endpoint utama:
 | GET | `/api/me` | Profil user aktif |
 | GET | `/api/stats` | Statistik data |
 | GET | `/api/data` | Data terbaru |
+| POST | `/api/analyze` | Analisis file tanpa menyimpan |
+| GET | `/api/analytics` | Profiling dan chart dari data tersimpan |
 | POST | `/api/upload` | Upload file data |
+| POST | `/api/upload?clean=true` | Upload dengan cleaning otomatis |
+| GET | `/api/management/summary` | Admin-only ringkasan role dan telemetry |
 | GET | `/api/management/users` | Admin-only daftar user |
 | PATCH/POST | `/api/management/users/{user_id}/role` | Admin-only update role |
+| GET | `/api/dev/ops-summary` | Dev/admin-only monitoring Azure dan Cloudflare |
+| GET | `/api/management/ops-summary` | Dev/admin-only alias monitoring |
 
 ### Upload CSV dan Excel
 
@@ -88,8 +99,8 @@ Upload awalnya JSON-only, sekarang sudah dibuat menerima:
 
 Aturan upload:
 
-- Maksimal 5 MB per file.
-- Maksimal 1.000 record/baris per upload.
+- Maksimal 100 MB per file.
+- Maksimal 1,000,000 record/baris per upload.
 - CSV dan Excel wajib punya header pada baris pertama.
 - Excel memakai sheet pertama.
 
@@ -125,7 +136,8 @@ Data user tidak menyimpan password plaintext. Yang disimpan adalah hash password
 Role user:
 
 - `user`: login, melihat dashboard, membaca data/statistik, dan upload data.
-- `admin`: semua akses user, ditambah panel Admin Users untuk melihat user dan mengubah role.
+- `dev`: melihat dashboard developer monitoring untuk Azure Monitor dan Cloudflare workload.
+- `admin`: mengelola user, role, dan ringkasan operasional.
 
 Domain admin tidak perlu dipisah. Dashboard tetap memakai `kelompok11cc.my.id`, sedangkan akses admin dibedakan melalui role pada token login.
 
@@ -143,6 +155,7 @@ Fungsinya:
 - Cloudflare Pages Function meneruskan request ke Azure Functions.
 - Azure Function URL dan function key disimpan sebagai environment variable Cloudflare.
 - API key tidak terlihat di browser.
+- Jika `AZURE_FUNCTION_URL` diarahkan ke Azure Traffic Manager, backend dapat failover ke App Service backup.
 
 Environment variable Cloudflare yang dibutuhkan:
 
@@ -164,6 +177,8 @@ Yang sudah disiapkan:
 - Container `telemetry-data`.
 - Container `users`.
 - Azure Function App.
+- Azure Traffic Manager untuk failover backend.
+- Azure App Service backup minimal.
 - Key Vault secret untuk Cosmos connection string.
 - Key Vault secret untuk auth token.
 - Application Insights.
@@ -187,29 +202,29 @@ Diagram sederhana:
 User
   |
   v
-Cloudflare Pages
-kelompok11cc.my.id
+Cloudflare DNS + CDN
   |
   v
-Frontend Dashboard
+Cloudflare Pages Dashboard
   |
   v
-Cloudflare Pages Function Proxy
-/api
+Cloudflare Pages Function Proxy /api/*
   |
   v
-Azure Functions Backend
+Azure Traffic Manager (backend failover)
   |
-  +--> Azure Key Vault
+  +--> Priority 1: Azure Functions Backend
+  |     +--> Azure Key Vault
+  |     +--> Azure Cosmos DB
+  |     |     +-- telemetry-data
+  |     |     +-- users
+  |     +--> Azure Blob Storage
+  |     |     +-- raw-data
+  |     +--> Application Insights / Azure Monitor
   |
-  +--> Azure Cosmos DB
-  |     +-- telemetry-data
-  |     +-- users
-  |
-  +--> Azure Blob Storage
-  |     +-- raw-data
-  |
-  +--> Application Insights
+  +--> Priority 2: Azure App Service Backup
+        +-- /api/hello
+        +-- /api/fallback-status
 ```
 
 ## 4. Alur Login/Register
@@ -294,6 +309,7 @@ Keamanan yang sudah diterapkan:
 - Cosmos connection string disimpan di Azure Key Vault.
 - Password user disimpan dengan PBKDF2 hash.
 - Token login ditandatangani dengan `AUTH_TOKEN_SECRET`.
+- VM hanya resource eksplorasi Target/Minggu 2 dan bukan runtime final. Jika masih aktif, SSH harus dibatasi ke IP admin.
 - `.gitignore` diperbarui agar file secret tidak ikut commit.
 
 File yang tidak boleh dicommit:
@@ -329,7 +345,9 @@ Yang perlu dites:
 - Login user.
 - Ambil profil user.
 - Ambil statistik.
+- Analisis file tanpa menyimpan.
 - Upload file CSV/Excel/JSON lokal.
+- Ambil analytics/chart.
 - Simpan data ke Cosmos DB.
 
 Jika ingin test lewat preview Cloudflare:
@@ -368,6 +386,7 @@ xlrd
 ```text
 AGENTS.md
 docs/deployment-guide.md
+docs/evidence/arsitektur-final.png
 docs/ringkasan-untuk-rekan.md
 functions/api/[[path]].js
 src/dashboard/env.example.js
@@ -388,5 +407,8 @@ Yang masih perlu dipastikan saat deployment:
 - Cloudflare Pages Function sudah aktif.
 - Environment variable Cloudflare sudah diisi.
 - Azure Function App sudah redeploy dengan dependency terbaru.
+- Jika ingin failover backend aktif, `AZURE_FUNCTION_URL` Cloudflare diarahkan ke endpoint Traffic Manager.
 - SSL custom domain `kelompok11cc.my.id` sudah aktif.
 - Terraform provider cache bisa diperbaiki dengan `terraform -chdir=infra init -upgrade` jika validasi lokal gagal karena lock/cache provider.
+
+Catatan laporan: sumber kebenaran dokumentasi berada pada Markdown. PDF/ODT perlu diekspor ulang dari Markdown final jika dibutuhkan untuk pengumpulan.

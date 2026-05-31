@@ -11,11 +11,13 @@ Minggu 3 berfokus pada layanan utama yang membuat sistem dapat berjalan end-to-e
 | Komponen | Layanan | Fungsi | Status |
 | --- | --- | --- | --- |
 | Frontend | Cloudflare Pages | Hosting dashboard statis pada domain `kelompok11cc.my.id` | Selesai |
+| Edge Proxy | Cloudflare Pages Function | Proxy `/api/*` agar function key tidak terekspos di browser | Selesai |
 | API Backend | Azure Functions Python | Endpoint auth, data, statistik, upload, analytics, dan admin | Selesai |
+| Backup Backend | Azure App Service | Secondary backend minimal untuk health/fallback | Selesai |
 | Database | Azure Cosmos DB for NoSQL | Menyimpan telemetry dan user login/register | Selesai |
 | Object Storage | Azure Blob Storage | Container `raw-data` untuk file mentah JSON, CSV, dan Excel | Selesai |
 | Secret Management | Azure Key Vault | Menyimpan Cosmos connection string dan auth token secret | Selesai |
-| Routing/Fallback | Azure Traffic Manager | Endpoint routing/failover opsional untuk jalur Azure | Selesai |
+| Routing/Fallback | Azure Traffic Manager | Backend failover dari Azure Functions ke App Service backup | Selesai |
 | CDN/Edge | Cloudflare Pages | Distribusi frontend statis dan proxy `/api` | Selesai |
 
 ## Database
@@ -63,13 +65,19 @@ Backend berada di `src/backend/function_app.py` dan berjalan sebagai Azure Funct
 | POST | `/api/upload` | Upload JSON, CSV, XLSX, atau XLS |
 | POST | `/api/upload?clean=true` | Cleaning otomatis sebelum simpan |
 | GET | `/api/analytics` | Profiling, quality report, dan chart dari data tersimpan |
+| GET | `/api/management/summary` | Admin-only ringkasan user, role, dan telemetry |
 | GET | `/api/management/users` | Admin-only daftar user |
 | PATCH/POST | `/api/management/users/{user_id}/role` | Admin-only update role user |
+| GET | `/api/dev/ops-summary` | Dev/admin-only monitoring Azure dan Cloudflare |
+| GET | `/api/management/ops-summary` | Dev/admin-only alias monitoring |
 
 ## Alur End-to-End
 
 ```text
 User
+  |
+  v
+Cloudflare DNS + CDN
   |
   v
 Cloudflare Pages / kelompok11cc.my.id
@@ -78,24 +86,30 @@ Cloudflare Pages / kelompok11cc.my.id
 Cloudflare Pages Function Proxy /api
   |
   v
-Azure Functions
+Azure Traffic Manager
   |
-  +--> Azure Key Vault
-  +--> Azure Cosmos DB
-  +--> Azure Blob Storage raw-data
-  +--> Application Insights
+  +--> Priority 1: Azure Functions
+  |     +--> Azure Key Vault
+  |     +--> Azure Cosmos DB
+  |     +--> Azure Blob Storage raw-data
+  |     +--> Application Insights / Azure Monitor
+  |
+  +--> Priority 2: Azure App Service backup
+        +--> /api/hello
+        +--> /api/fallback-status
 ```
 
 Alur utama:
 
 1. User membuka dashboard dari Cloudflare Pages.
 2. User register/login melalui proxy `/api`.
-3. Backend memvalidasi user pada Cosmos DB container `users`.
-4. User memilih file JSON, CSV, XLSX, atau XLS.
-5. Dashboard dapat menjalankan analisis kualitas data terlebih dahulu.
-6. Backend parsing file, melakukan cleaning jika diminta, lalu melakukan klasifikasi record.
-7. Data hasil proses disimpan ke Cosmos DB container `telemetry-data`.
-8. Dashboard memuat statistik, tabel record, dan chart analitik dari API.
+3. Cloudflare Pages Function meneruskan request ke backend Azure dengan function key server-side.
+4. Backend memvalidasi user pada Cosmos DB container `users`.
+5. User memilih file JSON, CSV, XLSX, atau XLS.
+6. Dashboard dapat menjalankan analisis kualitas data terlebih dahulu lewat `/api/analyze`.
+7. Backend parsing file, melakukan cleaning jika diminta, lalu melakukan klasifikasi record.
+8. Data hasil proses disimpan ke Cosmos DB container `telemetry-data`.
+9. Dashboard memuat statistik, tabel record, dan chart analitik dari API.
 
 ## Uji Fungsional
 
@@ -107,6 +121,8 @@ Alur utama:
 | 4 | Upload CSV/Excel/JSON | Data tersimpan di `telemetry-data` dengan owner user | Siap uji |
 | 5 | Analisis data | Quality score, profiling, dan chart dikembalikan tanpa menyimpan | Siap uji |
 | 6 | Admin melihat user | Hanya role `admin` yang dapat membuka endpoint admin | Siap uji |
+| 7 | Developer monitoring | Role `dev` atau `admin` dapat membuka ops summary | Siap uji |
+| 8 | Fallback backend | App Service backup menjawab `/api/hello` dan `/api/fallback-status` | Siap uji |
 
 Pengujian API dilakukan melalui endpoint Cloudflare Pages proxy `/api` menggunakan UI dashboard, Postman, atau PowerShell `Invoke-RestMethod`. Helper script lokal tidak disimpan di repository publik.
 
@@ -124,6 +140,8 @@ Screenshot yang sudah tersedia:
 Screenshot tambahan yang disarankan dari portal:
 
 - Azure Function App aktif dan endpoint health check.
+- Azure Traffic Manager dengan endpoint primary Functions dan secondary App Service.
+- App Service backup endpoint fallback.
 - Cosmos DB database `db-platform-monitoring` dengan container `telemetry-data` dan `users`.
 - Blob Storage container `raw-data`.
 - Cloudflare Pages custom domain aktif.
@@ -134,7 +152,7 @@ Screenshot tambahan yang disarankan dari portal:
 - Object storage: Azure Blob Storage container `raw-data`.
 - API pada compute layer: Azure Functions Python.
 - CDN/edge static hosting: Cloudflare Pages.
-- Load balancer/failover: Azure Traffic Manager sebagai routing/fallback opsional.
+- Backend failover: Azure Traffic Manager sebagai routing ke Azure Functions dan App Service backup minimal.
 - Secret management: Azure Key Vault dan Cloudflare environment variable.
 - Uji fungsional: disiapkan melalui script dan endpoint test.
 

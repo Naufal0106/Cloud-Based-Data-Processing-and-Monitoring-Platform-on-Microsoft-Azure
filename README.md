@@ -23,12 +23,17 @@ https://kelompok11cc.my.id
 
 Proyek ini menggunakan pendekatan hybrid deployment:
 
+- **Cloudflare DNS + CDN** untuk routing domain dan caching dashboard.
 - **Cloudflare Pages** untuk hosting dashboard statis.
+- **Cloudflare Pages Function** untuk proxy same-origin `/api/*` agar function key tidak terlihat di browser.
 - **Azure Functions** untuk API dan pemrosesan data serverless.
+- **Azure Traffic Manager** untuk routing/failover backend ke primary Azure Functions dan secondary Azure App Service.
+- **Azure App Service** sebagai backend cadangan minimal untuk health/fallback.
 - **Azure Blob Storage** untuk file mentah JSON, CSV, dan Excel pada container `raw-data`.
 - **Azure Cosmos DB for NoSQL** untuk menyimpan hasil data yang sudah diproses dan data user dashboard.
 - **Azure Key Vault** untuk menyimpan secret Cosmos DB connection string.
 - **Azure Application Insights** untuk observability backend.
+- **Azure Monitor, diagnostic settings, action group, dan lifecycle policy** untuk monitoring, log terpusat, alert, dan optimasi retensi.
 - **Terraform** untuk provisioning infrastruktur Azure.
 - **GitHub Actions** untuk deployment backend ke Azure Functions.
 
@@ -36,30 +41,39 @@ Proyek ini menggunakan pendekatan hybrid deployment:
 User
   |
   v
-Cloudflare Pages
+Cloudflare DNS + CDN
   |
   v
-Dashboard Frontend
+Cloudflare Pages Dashboard
   |
   v
-Azure Functions API
+Cloudflare Pages Function Proxy /api/*
   |
-  +--> Azure Key Vault
-  +--> Azure Blob Storage
-  +--> Azure Cosmos DB
-  +--> Application Insights
+  v
+Azure Traffic Manager (failover backend)
+  |
+  +--> Priority 1: Azure Functions API
+  |       +--> Azure Blob Storage raw-data
+  |       +--> Azure Cosmos DB
+  |       +--> Azure Key Vault
+  |       +--> Application Insights / Azure Monitor
+  |
+  +--> Priority 2: Azure App Service backup
+          +--> /api/hello
+          +--> /api/fallback-status
 ```
 
 ## Alur Data
 
 1. User membuka dashboard dari Cloudflare Pages.
-2. Dashboard memanggil endpoint Azure Functions.
-3. Data batch dapat diproses melalui:
+2. Dashboard memanggil proxy same-origin `/api/*` pada Cloudflare Pages Function.
+3. Proxy meneruskan request ke backend Azure. Jalur aktif mengarah ke Azure Functions; Traffic Manager mendukung failover ke App Service backup.
+4. Data batch dapat diproses melalui:
    - upload langsung ke endpoint `POST /api/upload`, atau
    - file baru pada Blob Storage container `raw-data`.
-4. Azure Functions melakukan parsing, enrichment, dan klasifikasi data.
-5. Hasil proses disimpan ke Cosmos DB.
-6. Dashboard membaca data dan statistik melalui endpoint `GET /api/data` dan `GET /api/stats`.
+5. Azure Functions melakukan parsing, enrichment, cleaning jika diminta, klasifikasi data, dan penyimpanan hasil.
+6. Hasil proses disimpan ke Cosmos DB container `telemetry-data`; data user login/register berada di container `users`.
+7. Dashboard membaca data, statistik, analytics, dan chart melalui endpoint API.
 
 ## Fitur Utama
 
@@ -93,6 +107,7 @@ Frontend tidak memanggil Azure Functions secara langsung. Dashboard memanggil en
 | POST | `/api/analyze` | Menganalisis file upload tanpa menyimpan data |
 | POST | `/api/upload` | Upload JSON, CSV, XLSX, atau XLS langsung untuk diproses |
 | POST | `/api/upload?clean=true` | Membersihkan data otomatis sebelum diproses dan disimpan |
+| GET | `/api/management/summary` | Admin-only: ringkasan user, role, dan telemetry |
 | GET | `/api/management/users` | Admin-only: melihat daftar user |
 | PATCH/POST | `/api/management/users/{user_id}/role` | Admin-only: mengubah role user |
 | GET | `/api/dev/ops-summary` | Dev/admin-only: ringkasan Azure Monitor dan Cloudflare workload |
@@ -134,7 +149,7 @@ Dashboard menerima file:
 - `.csv`: baris pertama wajib berisi header kolom.
 - `.xlsx` dan `.xls`: sheet pertama dipakai, baris pertama wajib berisi header kolom.
 
-Batas upload saat ini adalah 5 MB dan 1.000 baris data per file. Kolom yang disarankan:
+Batas upload saat ini adalah 100 MB dan 1,000,000 baris data per file. Kolom yang disarankan:
 
 | Kolom | Fungsi |
 | --- | --- |
@@ -172,6 +187,7 @@ Data telemetry di dashboard dibatasi berdasarkan akun login. Role `user` hanya m
 | Database | Azure Cosmos DB for NoSQL | Penyimpanan hasil olah data |
 | Secrets | Azure Key Vault | Penyimpanan connection string |
 | Monitoring | Azure Application Insights | Log dan observability backend |
+| Failover | Azure Traffic Manager, Azure App Service | Routing backend dan endpoint cadangan minimal |
 | Infrastructure | Terraform AzureRM | Provisioning resource Azure |
 | CI/CD | GitHub Actions | Deploy backend ke Azure Functions |
 
@@ -182,10 +198,10 @@ Data telemetry di dashboard dibatasi berdasarkan akun login. Role `user` hanya m
 |-- .github/
 |   `-- workflows/
 |       `-- deploy-backend.yaml
-|-- arch/
-|   |-- arsitektur_final-target.png
-|   `-- temp
 |-- docs/
+|   |-- evidence/
+|   |   |-- arsitektur-final.png
+|   |   `-- architecture-final-target.png
 |   |-- architecture-notes.md
 |   |-- deployment-guide.md
 |   |-- iam-config.md
@@ -245,7 +261,13 @@ Function yang tersedia:
 - `get_current_user`: HTTP GET untuk validasi token user.
 - `get_data`: HTTP GET untuk mengambil data dari Cosmos DB.
 - `get_stats`: HTTP GET untuk statistik record.
+- `get_analytics`: HTTP GET untuk profiling, quality report, dan chart dari data tersimpan.
+- `analyze_upload`: HTTP POST untuk analisis file tanpa menyimpan data.
 - `upload_data`: HTTP POST untuk upload JSON, CSV, XLSX, dan XLS langsung.
+- `get_management_summary`: HTTP GET admin-only untuk ringkasan role dan telemetry.
+- `list_admin_users`: HTTP GET admin-only untuk daftar user.
+- `update_admin_user_role`: HTTP PATCH/POST admin-only untuk mengubah role.
+- `get_developer_ops_summary`: HTTP GET dev/admin untuk Azure Monitor dan Cloudflare analytics.
 - `hello`: health check sederhana.
 
 ## Frontend
@@ -282,6 +304,8 @@ CLOUDFLARE_ZONE_ID
 CLOUDFLARE_API_TOKEN
 ```
 
+`AZURE_VM_NAME` hanya relevan jika metrik VM eksplorasi Minggu 2 masih ingin ditampilkan pada dashboard developer. VM bukan jalur runtime aplikasi final.
+
 `CLOUDFLARE_API_TOKEN` harus disimpan sebagai secret backend/Azure App Setting atau Key Vault reference, bukan di repository dan bukan di frontend.
 
 Managed identity Azure Function App diberi role `Monitoring Reader` pada resource group agar endpoint admin dapat membaca Azure Monitor metrics tanpa menyimpan Azure credential manual.
@@ -297,9 +321,10 @@ Folder `infra` berisi konfigurasi Terraform untuk resource Azure:
 - Resource Group: `RG-Kelompok11`
 - Region: `southeastasia`
 - Virtual Network: `VNet-Utama-Kelompok11`
-- Subnet publik dan privat
-- Linux VM untuk web/server management
+- Subnet publik dan privat sebagai fondasi jaringan Minggu 2
+- Linux VM untuk eksplorasi target Minggu 2, bukan workload runtime final
 - Azure Function App: `func-backend-monitoring-k11`
+- Azure App Service backup: `app-backend-backup-k11`
 - Azure Storage Account untuk Function App dan Blob trigger
 - Cosmos DB account, database, container `telemetry-data`, dan container `users`
 - Key Vault untuk secret Cosmos DB
@@ -308,7 +333,7 @@ Folder `infra` berisi konfigurasi Terraform untuk resource Azure:
 - Azure Monitor action group dan 3 alert rule operasional
 - Azure Monitor diagnostic settings untuk centralized logging ke Log Analytics
 - Storage lifecycle policy untuk optimasi retensi file mentah
-- Traffic Manager untuk endpoint routing/failover
+- Traffic Manager untuk backend routing/failover ke Azure Functions dan App Service backup
 - NSG untuk subnet publik dan privat
 - RBAC/IAM untuk anggota tim
 
@@ -318,12 +343,14 @@ File Terraform di folder `infra` ikut dicommit sebagai bukti program/IaC. Nilai 
 
 | Minggu | Fokus Roadmap | Bukti di Project | Status |
 | --- | --- | --- | --- |
-| 1 | Perencanaan dan arsitektur | `docs/week1-planning.md`, `docs/architecture-notes.md`, `arch/arsitektur_final-target.png` | Selesai |
+| 1 | Perencanaan dan arsitektur | `docs/week1-planning.md`, `docs/architecture-notes.md`, `docs/evidence/arsitektur-final.png` | Selesai |
 | 2 | Infrastruktur dasar, jaringan, IAM, IaC | `infra/`, `docs/week2-infrastructure.md`, `docs/iam-config.md`, `docs/resource-inventory.md` | Selesai |
 | 3 | Layanan inti end-to-end | `src/backend/`, `src/dashboard/`, `functions/api/`, `docs/week3-core-services.md` | Selesai |
 | 4 | Monitoring, keamanan, backup, optimasi biaya | `infra/monitoring.tf`, `infra/evidence.tf`, `docs/week4-monitoring-security-optimization.md`, `docs/evidence/` | Selesai |
 
 Bukti screenshot yang aman untuk laporan disimpan di `docs/evidence/`. Screenshot dari Azure Portal dan Cloudflare Portal perlu dicek ulang sebelum commit agar tidak memuat function key, token, access key, atau connection string.
+
+Diagram arsitektur final utama berada di `docs/evidence/arsitektur-final.png`. File `docs/evidence/architecture-final-target.png` dipertahankan sebagai path kompatibilitas dengan isi diagram yang sama.
 
 Laporan PDF rinci untuk roadmap Minggu 1-4 tersedia di `docs/Laporan_Minggu_1-4_Kelompok_11.pdf`.
 
@@ -387,8 +414,8 @@ Tambahkan juga domain `pages.dev` jika masih dipakai untuk preview deployment.
 - Cloudflare API token untuk admin analytics hanya boleh berada di backend Azure, bukan di browser.
 - Password user disimpan dengan hash PBKDF2, bukan plaintext.
 - Token login ditandatangani memakai `AUTH_TOKEN_SECRET` di Azure Function App.
-- SSH VM sebaiknya dibatasi hanya dari IP admin, bukan `*`.
-- VM sebaiknya memakai SSH key dan menonaktifkan password authentication.
+- VM eksplorasi Minggu 2 bukan bagian runtime final; jika masih dinyalakan, SSH harus dibatasi hanya dari IP admin.
+- VM eksplorasi sebaiknya memakai SSH key dan menonaktifkan password authentication.
 - Secret database sudah diarahkan melalui Azure Key Vault.
 - Terraform variable sensitif seperti `admin_password` tidak boleh dicommit dalam file `.tfvars`.
 
@@ -408,3 +435,7 @@ Total: sekitar USD 37.60 per bulan
 ```
 
 Biaya aktual dapat berubah sesuai pemakaian, region, traffic, jumlah request Azure Functions, konsumsi Cosmos DB, log Application Insights, dan resource yang aktif.
+
+## Catatan PDF/ODT
+
+Sumber kebenaran dokumentasi berada pada file Markdown. PDF/ODT laporan akhir perlu diekspor ulang dari Markdown final jika dibutuhkan untuk pengumpulan, karena tool konversi dokumen tidak tersedia di environment kerja saat pembaruan dokumentasi ini dilakukan.

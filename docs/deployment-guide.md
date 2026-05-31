@@ -4,7 +4,7 @@ Kelompok 11 - Cloud-Based Data Processing and Monitoring Platform
 
 ## Tujuan
 
-Dokumen ini berisi langkah ringkas untuk menjalankan frontend dashboard, mengonfigurasi backend Azure Functions, dan menyiapkan deployment Cloudflare Pages.
+Dokumen ini berisi langkah ringkas untuk menjalankan frontend dashboard, mengonfigurasi backend Azure Functions, menyiapkan Cloudflare Pages, dan memahami jalur failover backend.
 
 ## Menjalankan Frontend Lokal
 
@@ -20,7 +20,7 @@ Buka:
 http://127.0.0.1:4173/
 ```
 
-Jika backend proxy belum tersedia, dashboard akan berjalan dalam demo mode.
+Jika backend proxy belum tersedia, gunakan preview lokal role di bagian test UI. Production UI tetap dirancang memakai proxy `/api/*`.
 
 ## Konfigurasi Frontend Lokal
 
@@ -52,7 +52,7 @@ Build output directory: src/dashboard
 Functions directory: functions
 ```
 
-Cloudflare Pages Function pada `functions/api/[[path]].js` membutuhkan environment variable server-side untuk Azure Function base URL dan function key. Isi nilainya langsung di dashboard Cloudflare Pages, bukan di file repository atau frontend. Browser hanya melihat request ke `/api`.
+Cloudflare Pages Function pada `functions/api/[[path]].js` membutuhkan environment variable server-side untuk backend Azure dan function key. Isi nilainya langsung di dashboard Cloudflare Pages, bukan di file repository atau frontend. Browser hanya melihat request ke `/api/*`.
 
 ## Konfigurasi Auth Backend
 
@@ -102,6 +102,25 @@ Catatan:
 
 - Dashboard tetap memanggil `/api`, jadi API URL dan function key tidak terlihat di browser.
 - Secret `AZURE_FUNCTION_URL` dan `AZURE_FUNCTION_KEY` hanya disimpan di environment Cloudflare Pages Function.
+
+## Routing Backend dan Failover
+
+Jalur aktif aplikasi:
+
+```text
+Cloudflare Pages -> Cloudflare Pages Function /api/* -> Azure Functions
+```
+
+Terraform juga menyiapkan Azure Traffic Manager untuk backend failover:
+
+```text
+Priority 1: Azure Functions primary backend
+Priority 2: Azure App Service backup backend
+```
+
+Jika ingin memakai failover backend melalui Traffic Manager, nilai `AZURE_FUNCTION_URL` di Cloudflare dapat diarahkan ke endpoint Traffic Manager. Jika nilai tersebut tetap diarahkan langsung ke Azure Functions, aplikasi tetap berjalan pada jalur primary aktif tanpa melewati Traffic Manager.
+
+App Service backup saat ini hanya menyediakan endpoint minimal seperti `/api/hello` dan `/api/fallback-status`. Endpoint data processing utama tetap berada di Azure Functions.
 
 ## Deployment Backend ke Azure Functions
 
@@ -203,7 +222,10 @@ Yang diuji:
 - `POST /api/login`
 - `GET /api/me`
 - `GET /api/stats`
+- `GET /api/data`
+- `POST /api/analyze`
 - `POST /api/upload` memakai file CSV/Excel/JSON lokal
+- `GET /api/analytics`
 
 Jika ingin memakai base URL lain:
 
@@ -223,9 +245,16 @@ Jika muncul error SSL/TLS, pastikan custom domain Cloudflare Pages sudah aktif d
 | GET | `/api/me` | Profil user aktif |
 | GET | `/api/stats` | Statistik data |
 | GET | `/api/data?limit=50` | Data terbaru |
+| POST | `/api/analyze` | Analisis file tanpa menyimpan |
+| GET | `/api/analytics?limit=200` | Profiling dan chart dari data tersimpan |
 | POST | `/api/upload` | Upload JSON, CSV, XLSX, atau XLS |
+| POST | `/api/upload?clean=true` | Upload dengan cleaning otomatis |
+| GET | `/api/management/summary` | Admin-only ringkasan role dan telemetry |
 | GET | `/api/management/users` | Admin-only daftar user |
 | PATCH/POST | `/api/management/users/{user_id}/role` | Admin-only update role user |
+| GET | `/api/dev/ops-summary` | Dev/admin-only monitoring Azure dan Cloudflare |
+| GET | `/api/management/ops-summary` | Dev/admin-only alias monitoring |
+| GET | `/api/fallback-status` | Status App Service backup minimal |
 
 ## Role Admin
 
@@ -242,3 +271,8 @@ Register publik hanya membuat role `user`. Akses admin tidak disediakan melalui 
 | CORS error | Origin belum diizinkan | Tambahkan origin Cloudflare/localhost di Azure Function App |
 | Upload gagal 401/403 | Secret Cloudflare salah | Periksa `AZURE_FUNCTION_URL` dan `AZURE_FUNCTION_KEY` di Cloudflare |
 | Data tidak tersimpan | Cosmos DB atau Key Vault bermasalah | Cek Application Insights dan akses managed identity |
+| Failover hanya mengembalikan fallback | App Service backup memang minimal | Gunakan Azure Functions untuk fitur API utama atau kembangkan backup backend jika butuh failover penuh |
+
+## Catatan PDF/ODT Laporan
+
+Sumber kebenaran dokumentasi berada pada file Markdown. PDF/ODT laporan akhir perlu diekspor ulang dari Markdown final jika dibutuhkan untuk pengumpulan.
