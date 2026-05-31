@@ -1,0 +1,23 @@
+# Copy file ini menjadi terraform.tfvars, lalu isi nilai lokal masing-masing.
+# Jangan commit terraform.tfvars karena berisi password, token, dan principal ID.
+
+admin_username = "naufaladmin"
+admin_password = "GANTI_DENGAN_PASSWORD_VM_YANG_KUAT"
+
+# Minimal 32 karakter. Gunakan nilai random untuk tanda tangan token login.
+auth_token_secret = "GANTI_DENGAN_RANDOM_SECRET_MINIMAL_32_KARAKTER"
+
+# Azure principal/object ID anggota tim.
+id_naufal = "GANTI_DENGAN_PRINCIPAL_ID_NAUFAL"
+id_rendy  = "GANTI_DENGAN_PRINCIPAL_ID_RENDY"
+id_arifin = "GANTI_DENGAN_PRINCIPAL_ID_ARIFIN"
+id_zhykwa = "GANTI_DENGAN_PRINCIPAL_ID_ZHYKWA"
+
+log_analytics_workspace_id = "/subscriptions/GANTI_SUBSCRIPTION_ID/resourceGroups/GANTI_RESOURCE_GROUP/providers/Microsoft.OperationalInsights/workspaces/GANTI_WORKSPACE"
+
+# Opsional, boleh dikosongkan kalau endpoint admin metrics belum dipakai.
+azure_subscription_id = ""
+cloudflare_zone_id    = ""
+
+alert_email   = "kelompok11@example.com"
+azure_vm_name = "VM-Web-Kelompok11"
