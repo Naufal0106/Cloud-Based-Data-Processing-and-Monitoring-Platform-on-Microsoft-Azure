@@ -70,5 +70,5 @@ variable "id_zhykwa" { type = string }
 variable "admin_ssh_allowed_ip" {
   description = "IP Publik admin untuk mengakses SSH port 22 VM"
   type        = string
-  default     = "182.1.2.3/32" # Ganti ke IP publik asli Anda
+  default     = "182.1.2.3/32" 
 }
