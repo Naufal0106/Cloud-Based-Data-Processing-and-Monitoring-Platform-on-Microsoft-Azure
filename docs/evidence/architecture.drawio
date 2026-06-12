@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mxfile host="app.diagrams.net" modified="2026-06-11T21:59:42Z" agent="Antigravity" etag="" version="20.2.5" type="device">
+  <diagram id="arch" name="Architecture Diagram">
+    <mxGraphModel dx="1472" dy="866" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <!-- Cloudflare Pages (Frontend) -->
+        <mxCell id="cloudflarePages" value="Cloudflare Pages (Dashboard)" style="shape=rectangle;rounded=1;whiteSpace=wrap;html=1;fillColor=#F38020;fontColor=#ffffff;strokeColor=#C75B0A;gradientColor=#FF9D3C" vertex="1" parent="1">
+          <mxGeometry x="40" y="40" width="180" height="80" as="geometry" />
+        </mxCell>
+        <!-- Cloudflare Function (Proxy) -->
+        <mxCell id="cloudflareFunc" value="Cloudflare Pages Function (Proxy)" style="shape=ellipse;whiteSpace=wrap;html=1;fillColor=#0080FF;fontColor=#ffffff;strokeColor=#0066CC" vertex="1" parent="1">
+          <mxGeometry x="280" y="55" width="150" height="50" as="geometry" />
+        </mxCell>
+        <!-- Azure Traffic Manager -->
+        <mxCell id="trafficMgr" value="Azure Traffic Manager" style="shape=hexagon;whiteSpace=wrap;html=1;fillColor=#0072C6;fontColor=#ffffff;strokeColor=#005A9C" vertex="1" parent="1">
+          <mxGeometry x="500" y="45" width="160" height="80" as="geometry" />
+        </mxCell>
+        <!-- Azure Functions (Primary Backend) -->
+        <mxCell id="azureFunc" value="Azure Functions (Primary)" style="shape=rounded=1;whiteSpace=wrap;html=1;fillColor=#0078D4;fontColor=#ffffff;strokeColor=#005A9E" vertex="1" parent="1">
+          <mxGeometry x="720" y="30" width="160" height="80" as="geometry" />
+        </mxCell>
+        <!-- Azure App Service (Backup Backend) -->
+        <mxCell id="appService" value="Azure App Service (Backup)" style="shape=rounded=1;whiteSpace=wrap;html=1;fillColor=#2F88FF;fontColor=#ffffff;strokeColor=#0066CC" vertex="1" parent="1">
+          <mxGeometry x="720" y="130" width="160" height="80" as="geometry" />
+        </mxCell>
+        <!-- Azure Blob Storage -->
+        <mxCell id="blobStorage" value="Azure Blob Storage (raw-data)" style="shape=cylinder;whiteSpace=wrap;html=1;fillColor=#0099CC;fontColor=#ffffff;strokeColor=#006699" vertex="1" parent="1">
+          <mxGeometry x="720" y="240" width="160" height="80" as="geometry" />
+        </mxCell>
+        <!-- Azure Cosmos DB -->
+        <mxCell id="cosmosDB" value="Azure Cosmos DB (NoSQL)" style="shape=cylinder;whiteSpace=wrap;html=1;fillColor=#2F88FF;fontColor=#ffffff;strokeColor=#0066CC" vertex="1" parent="1">
+          <mxGeometry x="720" y="340" width="160" height="80" as="geometry" />
+        </mxCell>
+        <!-- Azure Key Vault -->
+        <mxCell id="keyVault" value="Azure Key Vault" style="shape=hexagon;whiteSpace=wrap;html=1;fillColor=#A0A0A0;fontColor=#ffffff;strokeColor=#808080" vertex="1" parent="1">
+          <mxGeometry x="720" y="440" width="160" height="80" as="geometry" />
+        </mxCell>
+        <!-- Azure Monitor & App Insights -->
+        <mxCell id="monitor" value="Azure Monitor &amp; App Insights" style="shape=rectangle;rounded=1;whiteSpace=wrap;html=1;fillColor=#0072C6;fontColor=#ffffff;strokeColor=#005A9C" vertex="1" parent="1">
+          <mxGeometry x="720" y="540" width="200" height="80" as="geometry" />
+        </mxCell>
+        <!-- Connections -->
+        <mxCell id="edge1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#000000" edge="1" parent="1" source="cloudflarePages" target="cloudflareFunc">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#000000" edge="1" parent="1" source="cloudflareFunc" target="trafficMgr">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge3" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#000000" edge="1" parent="1" source="trafficMgr" target="azureFunc">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge4" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#000000;strokeDashPattern=5 5" edge="1" parent="1" source="trafficMgr" target="appService">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge5" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#000000" edge="1" parent="1" source="azureFunc" target="blobStorage">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge6" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#000000" edge="1" parent="1" source="azureFunc" target="cosmosDB">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge7" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#000000" edge="1" parent="1" source="azureFunc" target="keyVault">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge8" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#000000" edge="1" parent="1" source="azureFunc" target="monitor">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
